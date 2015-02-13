@@ -14,6 +14,8 @@ postings_file = ""
 query_file = ""
 output_file = ""
 
+dict_words = {}
+
 operators = ['(', ')', 'NOT', 'AND', 'OR']
 
 def process_query(query):
@@ -38,15 +40,48 @@ def get_parenthesis_query(query):
 
     return paren_query, query
 
+def process_or(query1, query2):
+    query1_list, _ = get_postings_skip_list(query1)
+    query2_list, _ = get_postings_skip_list(query2)
+    return query1_list + query2_list
+
+#TODO: This is not using skip lists yet :( 
+def process_and(query1, query2):
+    query1_list, _ = get_postings_skip_list(query1)
+    query2_list, _ = get_postings_skip_list(query2)
+    return filter(lambda x:x in query1_list, query2_list)
+
 def process_not(query):
     pass
 
-def get_postings_skip_list(line_num):
+def get_postings_skip_list(query_word):
+    line_num = get_line_num_from_dict(query_word)
+
+    # Query does not exist - TODO: handle return case 
+    if not line_num:
+        return
+
     full_postings = linecache.getline(postings_file, line_num)
     skip_list = linecache.getline(postings_file, line_num+1)
     return full_postings, skip_list
 
+def get_line_num_from_dict(query_word):
+    if not query_word in dict_words:
+        return
+    else:
+        return dict_words[query_word][0]
+
+# Is there a better way to store the dictionary? 
+# I store it as key: word, value: (line num, freq)
+def read_dict():
+    f = open(dict_file, 'r')
+    for line in f:
+        word_list = line.strip().split()
+        dict_words[word_list[0]] = (word_list[1], word_list[2])
+    f.close()
+
 def search():
+    read_dict()
     f = open(query_file, 'r')
     for query in f:
         process_query(query)
