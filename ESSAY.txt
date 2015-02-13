@@ -1,0 +1,21 @@
+1. It is not a good idea to remove numbers from the text. Numbers may contain important information such as year or date or dollar amount. However, if we remove numbers, the dicionary size will reduce quite a lot while the postings list size will not be significantly affected. This is because most numbers are unique to a few documents and hence their frequency is less than 10. In our program, there is a boolean switch to remove numbers. 
+
+Without using numbers:
+dictionary size -- 23464 
+postings size -- 32464
+
+Using numbers: 
+dictionary size -- 20295
+postings size -- 40590
+
+2. If stop words are removed, the dictionary size reduces by just a little while the postings file reduces by a lot. There are very few stop words in the english dictionary as compared to other common words, while stop words are very frequently used in texts as articles or prepositions. In our program, there is a boolean switch to remove stop words.
+
+Without using stop words:
+dictionary size -- 23464 
+postings size -- 32464
+
+Using stop words:
+dictionary size -- 32378
+postings size -- 64756 
+
+3. 
