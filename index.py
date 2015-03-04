@@ -16,6 +16,7 @@ dict_file = ""
 postings_file = ""
 
 doc_dict = {}
+all_file = set()
 stop_words = set(nltk.corpus.stopwords.words('english'))
 stemmer = PorterStemmer()
 
@@ -25,16 +26,18 @@ def index():
 
     write_dict_and_postings_file()
 
-# dict file written as: <filename> <line num in posting file> <frequency>
+# dict file written as: <term> <line offset in posting file> <frequency>
 # postings file just throw all the posting numbers in 
 def write_dict_and_postings_file():
     f = open(dict_file, 'w')
     f_posting = open(postings_file, 'w')
-    start = 1
-
-    for key in doc_dict:
-        postings_set = doc_dict[key]
-        f.write(key + " " + str(start) + " " + str(len(postings_set)) + "\n")    
+    all_file_list = ' '.join(str(file) for file in sorted(all_file))
+    f_posting.write(all_file_list+'\n')
+    offset = len(all_file_list+'\n')
+    keylist = sorted(doc_dict.keys())
+    for key in keylist:
+        postings_set = sorted(doc_dict[key])
+        f.write(key + " " + str(offset) + " " + str(len(postings_set)) + "\n")    
 
         set_string = ' '.join(str(post) for post in postings_set)
         f_posting.write(set_string + "\n")
@@ -43,9 +46,10 @@ def write_dict_and_postings_file():
         skip_set_string = ' '.join(str(post) for post in skip_list)
         f_posting.write(skip_set_string + "\n")
 
-        start = start + 2
+        offset = offset + len(set_string+'\n'+skip_set_string+'\n')
 
     f.close()
+    f_posting.close()
 
 def read_file(filename):
     f = open(doc_dir + "/" + filename, 'r')
@@ -84,11 +88,12 @@ def process_word(word, use_stop_words=False, remove_numbers=False):
 
 def add_to_dict(word, filename): 
     word = str(word)
+    all_file.add(filename)
     if not word in doc_dict:
         doc_dict[word] = set()
-        doc_dict.get(word).add(filename.strip())
+        doc_dict[word].add(int(filename.strip()))
     elif not word in doc_dict.get(word):
-        doc_dict.get(word).add(filename.strip())
+        doc_dict[word].add(int(filename.strip()))
     else:
         pass
 
