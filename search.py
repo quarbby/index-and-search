@@ -5,9 +5,9 @@
 import sys
 import os
 import getopt
-
+import math
 import nltk
-import linecache
+from nltk.stem.porter import PorterStemmer
 
 dict_file = ""
 postings_file = ""
@@ -17,14 +17,15 @@ all_file = set()
 
 dict_words = {}
 
-operators = ['(', ')', 'NOT', 'AND', 'OR']
+stemmer = PorterStemmer()
+
+operators = ['NOT', 'AND', 'OR']
 
 def process_query(query):
-
     post_fix_query = convert_to_post_fix(query)
     result = process_post_fix(post_fix_query)
 
-    return
+    return result
 
 def convert_to_post_fix(query):
     op_stack = []
@@ -46,13 +47,16 @@ def convert_to_post_fix(query):
             op_stack.append(term)
         elif '(' in term:
             if term[0] == '(':
-                output_stack.append(term[1:])
                 op_stack.append('(')
+                if term[1:] == 'NOT':       #this is the only operator that can be at the start of a bracket
+                    op_stack.append(term[1:])
+                else:
+                    output_stack.append(stemmer.stem(term[1:].lower()))
             else:
                 assert False, "invalid query in term \"%s\" " %(term)
         elif ')' in term:
             if term[len(term)-1] == ')':
-                output_stack.append(term[:-1])
+                output_stack.append(stemmer.stem(term[:-1].lower()))
                 next_op = op_stack.pop()
                 while next_op != '(':
                     output_stack.append(next_op)
@@ -60,50 +64,81 @@ def convert_to_post_fix(query):
             else:
                 assert False, "invalid query in term \"%s\" " %(term)
         else:
-            output_stack.append(term)
+            output_stack.append(stemmer.stem(term.lower()))
     while op_stack:
         output_stack.append(op_stack.pop())
     return output_stack
 
 def process_post_fix(query):
-    stack = []
+    res_stack = []
     for term in query:
-        if term in ['AND', 'OR']:
-            pass
+        if term =='AND':
+            res_stack.append(process_and(res_stack.pop(), res_stack.pop()))
+        elif term == 'OR':
+            res_stack.append(process_or(res_stack.pop(), res_stack.pop()))
         elif term == 'NOT':
-            pass
+            # print result
+            res_stack.append(process_not(res_stack.pop()))
         else:
-            stack.append(term)
+            with open(postings_file, 'r') as posting:
+                if term in dict_words:
+                    posting.seek(int(dict_words[term][0]))
+                    res_stack.append(map(lambda x: int(x), posting.readline().strip().split()))
+                else :
+                    res_stack.append([])
+    return res_stack[0]
 
-# Get query within parenthesis
-def get_parenthesis_query(query):
-    paren_query = []
-    while operators[0] and operators[1] in query:
-        op_open_bracket = query.find(operators[0])
-        op_close_bracket = query.find(operators[1])
-        sub_query = query[op_open_bracket+1:op_close_bracket] 
-        paren_query.append(query)
-        query = query[:op_open_bracket] + query[op_close_bracket+1:]
 
-    # Process each sub query for AND OR NOT operators
-    for sub_query in paren_query:
-        sub_query = process_not(sub_query)
+def process_or(posting_term1, posting_term2):
+    res = []
+    idx1 = 0
+    idx2 = 0
+    while idx1 < len(posting_term1) and idx2 < len(posting_term2):
+        if (posting_term1[idx1] < posting_term2[idx2] ):
+            res.append(posting_term1[idx1])
+            idx1 = idx1+1
+        elif (posting_term1[idx1] > posting_term2[idx2]):
+            res.append(posting_term2[idx2])
+            idx2 = idx2+1
+        else:
+            res.append(posting_term1[idx1])
+            idx1 = idx1+1
+            idx2 = idx2+1
 
-    return paren_query, query
+    if idx2 >= len(posting_term2):
+        res = res + posting_term1[idx1:]
+    elif idx1 >= len(posting_term1):
+        res = res + posting_term2[idx2:]
+    return res
 
-def process_or(query1, query2):
-    query1_list, _ = get_postings_skip_list(query1)
-    query2_list, _ = get_postings_skip_list(query2)
-    return query1_list + query2_list
+#this use implicit skip pointers instead of explicit ones
+def process_and(posting_term1, posting_term2):
+    res = []
+    idx1 = 0
+    idx2 = 0
+    skip1 = int(math.sqrt(len(posting_term1)))
+    skip2 = int(math.sqrt(len(posting_term2)))
+    while idx1 < len(posting_term1) and idx2 < len(posting_term2):
+        if posting_term1[idx1] == posting_term2[idx2]:
+            res.append(posting_term1[idx1])
+            idx1 = idx1+1
+            idx2 = idx2+1
+        else:
+            if skip1 < len(posting_term1) and posting_term1[skip1] < posting_term2[idx2]:
+                idx1 = skip1
+                skip1 = skip1 + int(math.sqrt(len(posting_term1)))
+            elif skip2 < len(posting_term2) and posting_term2[skip2] < posting_term1[idx1]:
+                idx2 = skip2
+                skip2 = skip2 + int(math.sqrt(len(posting_term2)))
+            elif posting_term1[idx1] < posting_term2[idx2]:
+                idx1 = idx1 + 1
+            elif posting_term2[idx2] < posting_term1[idx1]:
+                idx2 = idx2 + 1
+    return res
 
-#TODO: This is not using skip lists yet :( 
-def process_and(query1, query2):
-    query1_list, _ = get_postings_skip_list(query1)
-    query2_list, _ = get_postings_skip_list(query2)
-    return filter(lambda x:x in query1_list, query2_list)
-
-def process_not(query):
-    pass
+def process_not(posting):
+    res = sorted(all_file - set(posting))
+    return res
 
 def get_postings_skip_list(query_word):
     line_num = get_line_num_from_dict(query_word)
@@ -112,8 +147,8 @@ def get_postings_skip_list(query_word):
     if not line_num:
         return
 
-    full_postings = linecache.getline(postings_file, line_num)
-    skip_list = linecache.getline(postings_file, line_num+1)
+    # full_postings = linecache.getline(postings_file, line_num)
+    # skip_list = linecache.getline(postings_file, line_num+1)
     return full_postings, skip_list
 
 def get_line_num_from_dict(query_word):
@@ -132,9 +167,9 @@ def read_dict():
     f.close()
 
 def read_meta():
+    global all_file
     with open(postings_file, 'r') as f:
-        all_file = set(f.readline().strip().split())
-    print all_file
+        all_file = set(map(lambda x: int(x), f.readline().strip().split()))
 
 def write_result_file():
     pass
@@ -142,12 +177,9 @@ def write_result_file():
 def search():
     read_dict()
     read_meta()
-    f = open(query_file, 'r')
-    for query in f:
-        process_query(query)
-
-    write_result_file()
-    f.close()
+    with open(output_file, 'w') as out, open(query_file, 'r') as f:
+        for query in f:
+            out.write(" ".join(str(x) for x in process_query(query)) + '\n')
 
 def usage():
     print "Usage python search.py -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results"
@@ -162,10 +194,8 @@ if __name__ == '__main__':
             elif opt == '-p':
                 postings_file = arg
             elif opt == '-q':
-                print "Query", arg
                 query_file = arg
             elif opt == '-o':
-                print "Output", arg
                 output_file = arg
             else:
                 assert False, "unhandled option"
@@ -177,5 +207,4 @@ if __name__ == '__main__':
     if "" in [dict_file, postings_file, query_file, output_file]:
         usage()
         sys.exit(2)
-
     search()

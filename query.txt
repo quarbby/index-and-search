@@ -1,10 +1,6 @@
-oil
-oil AND diamond OR texas
-us AND texas
-(us AND texas) OR (federal AND Reserve)
-oil OR diamond AND money
-(oil OR diamond) AND money OR gold
-platinum AND (oil OR diamond) AND NOT gold
-alantic AND NOT US 
-bank AND (Discount OR offer)
-bill OR Gates AND NOT (vista OR XP) AND NOT mac
+Zambia AND copper
+Zambia OR copper
+Zambia AND NOT copper
+Zambia
+copper
+copper AND NOT Zambia

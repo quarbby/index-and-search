@@ -18,4 +18,7 @@ Using stop words:
 dictionary size -- 32378
 postings size -- 64756 
 
-3. 
+With stop words, querries involving words that have stemmed or normalized form resembling a stop words will return significantly more results, since it's not possible to differentiate between a meaningful term and a stop word. For example: searching for Will Smith will stop words will include a large number of results as compared to removing stop words.
+
+3. The sent_tokenize produced results based on the lines of the document, making it incorrect as a sentence might span several lines. An improvement would be to split sentences by '.' and/or remove all newline character.
+For word_tokenize, the result word list include punctuation marks like ',', '.', which is redundant and if not filtered correctly, might lead to improper indexing and slow down the whole process, as these punctuation marks are very frequently used.

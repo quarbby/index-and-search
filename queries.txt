@@ -1,0 +1,19 @@
+NOT happylunarnewyear
+happylunarnewyear
+year
+NOT NOT year
+NOT year
+NOT NOT NOT year
+year AND mln
+NOT (NOT year OR NOT mln)
+year OR per
+NOT year AND NOT per
+year OR mln OR per
+year AND mln AND per
+NOT (NOT year OR NOT mln OR NOT per)
+year AND NOT (mln OR per)
+year AND NOT mln AND NOT per
+NOT (year AND mln AND per)
+NOT year OR NOT mln OR NOT per
+year OR mln AND (per OR econom) AND NOT currenc
+bill OR Gates AND (vista OR XP) AND NOT mac

@@ -42,11 +42,11 @@ def write_dict_and_postings_file():
         set_string = ' '.join(str(post) for post in postings_set)
         f_posting.write(set_string + "\n")
 
-        skip_list = implement_skip_list(postings_set)
-        skip_set_string = ' '.join(str(post) for post in skip_list)
-        f_posting.write(skip_set_string + "\n")
+        # skip_list = implement_skip_list(postings_set)
+        # skip_set_string = ' '.join(str(post) for post in skip_list)
+        # f_posting.write(skip_set_string + "\n")
 
-        offset = offset + len(set_string+'\n'+skip_set_string+'\n')
+        offset = offset + len(set_string+'\n')
 
     f.close()
     f_posting.close()
@@ -62,7 +62,7 @@ def read_file(filename):
             words = words + word_list
 
         for word in words:
-            word  = process_word(word, use_stop_words=True, remove_numbers=False)
+            word  = process_word(word)
             add_to_dict(word, filename)
 
     f.close()
@@ -88,7 +88,7 @@ def process_word(word, use_stop_words=False, remove_numbers=False):
 
 def add_to_dict(word, filename): 
     word = str(word)
-    all_file.add(filename)
+    all_file.add(int(filename))
     if not word in doc_dict:
         doc_dict[word] = set()
         doc_dict[word].add(int(filename.strip()))
