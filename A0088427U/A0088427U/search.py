@@ -27,28 +27,25 @@ def process_query(query):
 
     return result
 
+#Using Shunting-yard algorithm to convert a query to post-fix form
 def convert_to_post_fix(query):
     op_stack = []
     output_stack = []
 
-
-    # paren_query, new_query= get_parenthesis_query(query)
-    # query_list = query_list + paren_query
-
     terms = query.strip().split()
     for term in terms:
-        if (term in ['AND', 'OR', 'NOT']):
+        if (term in operators):
             if (term == 'AND'):
-                while op_stack and op_stack[len(op_stack)-1] in ['AND', 'NOT']:       #pop if the top of op_stack is AND or NOT
+                while op_stack and op_stack[len(op_stack)-1] in ['AND', 'NOT']:         #pop if the top of op_stack is AND or NOT
                     output_stack.append(op_stack.pop())
             elif (term == 'OR'):
-                while op_stack and op_stack[len(op_stack)-1] != '(':                                #since OR has lowest precedence
+                while op_stack and op_stack[len(op_stack)-1] != '(':                    #since OR has lowest precedence, anything else should be popped out before that
                     output_stack.append(op_stack.pop())
             op_stack.append(term)
         elif '(' in term:
             if term[0] == '(':
                 op_stack.append('(')
-                if term[1:] == 'NOT':       #this is the only operator that can be at the start of a bracket
+                if term[1:] == 'NOT':                                                   #this is the only operator that can be at the start of a bracket
                     op_stack.append(term[1:])
                 else:
                     output_stack.append(stemmer.stem(term[1:].lower()))
@@ -66,7 +63,7 @@ def convert_to_post_fix(query):
         else:
             output_stack.append(stemmer.stem(term.lower()))
     while op_stack:
-        output_stack.append(op_stack.pop())
+        output_stack.append(op_stack.pop())                                             #output the rest of the opstack out
     return output_stack
 
 def process_post_fix(query):
@@ -100,7 +97,7 @@ def process_or(posting_term1, posting_term2):
         elif (posting_term1[idx1] > posting_term2[idx2]):
             res.append(posting_term2[idx2])
             idx2 = idx2+1
-        else:
+        else:                                           #if doc are in both, need to advance both pointers to avoid duplication
             res.append(posting_term1[idx1])
             idx1 = idx1+1
             idx2 = idx2+1
@@ -116,8 +113,8 @@ def process_and(posting_term1, posting_term2):
     res = []
     idx1 = 0
     idx2 = 0
-    skip1 = int(math.sqrt(len(posting_term1)))
-    skip2 = int(math.sqrt(len(posting_term2)))
+    skip1 = int(math.sqrt(len(posting_term1)))          #implicit pointer
+    skip2 = int(math.sqrt(len(posting_term2)))          #implicit pointer
     while idx1 < len(posting_term1) and idx2 < len(posting_term2):
         if posting_term1[idx1] == posting_term2[idx2]:
             res.append(posting_term1[idx1])
@@ -137,28 +134,25 @@ def process_and(posting_term1, posting_term2):
     return res
 
 def process_not(posting):
-    res = sorted(all_file - set(posting))
+    res = []
+    idx1 = 0
+    idx2 = 0
+    while idx1 < len(all_file) and idx2 < len(posting):
+        if (all_file[idx1] < posting[idx2] ):
+            res.append(all_file[idx1])
+            idx1 = idx1+1
+        elif (all_file[idx1] > posting[idx2]):
+            idx2 = idx2+1
+        else:                                           #if doc are in both, need to advance both pointers to avoid duplication
+            idx1 = idx1+1
+            idx2 = idx2+1
+
+    if idx2 >= len(posting):
+        res = res + all_file[idx1:]
     return res
 
-def get_postings_skip_list(query_word):
-    line_num = get_line_num_from_dict(query_word)
 
-    # Query does not exist - TODO: handle return case 
-    if not line_num:
-        return
-
-    # full_postings = linecache.getline(postings_file, line_num)
-    # skip_list = linecache.getline(postings_file, line_num+1)
-    return full_postings, skip_list
-
-def get_line_num_from_dict(query_word):
-    if not query_word in dict_words:
-        return
-    else:
-        return dict_words[query_word][0]
-
-# Is there a better way to store the dictionary? 
-# I store it as key: word, value: (line offset, freq)
+# Dict stored as key: word, value: (line offset, freq)
 def read_dict():
     f = open(dict_file, 'r')
     for line in f:
@@ -166,13 +160,11 @@ def read_dict():
         dict_words[word_list[0]] = (word_list[1], word_list[2])
     f.close()
 
+#read the first line, which indicates all the files indexed, this is for NOT query
 def read_meta():
     global all_file
     with open(postings_file, 'r') as f:
-        all_file = set(map(lambda x: int(x), f.readline().strip().split()))
-
-def write_result_file():
-    pass
+        all_file = map(lambda x: int(x), f.readline().strip().split())
 
 def search():
     read_dict()

@@ -1,5 +1,9 @@
 Done as a pair: A0119646X, A0088427U
 
+Email:
+a0119646@nus.edu.sg
+a0088427@nus.edu.sg
+
 Files included: 
 1. index.py: Python file for indexing the documents
 2. search.py: Python file for processing a search query
@@ -33,6 +37,6 @@ Note:
 2. Skip pointers are implemented implicitly, i.e they are offsets calculated on the fly as we iterate through the posting lists instead of fixed, offline calculated pointers generated during indexing phase
 
 References: 
-Resources from the Internet, i.e. Stack Overflow, for python coding
+Resources from the Internet, i.e. Stack Overflow, Python documentation for python coding
 Shunting-yard algorithm http://en.wikipedia.org/wiki/Shunting-yard_algorithm
 

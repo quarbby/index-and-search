@@ -42,10 +42,6 @@ def write_dict_and_postings_file():
         set_string = ' '.join(str(post) for post in postings_set)
         f_posting.write(set_string + "\n")
 
-        # skip_list = implement_skip_list(postings_set)
-        # skip_set_string = ' '.join(str(post) for post in skip_list)
-        # f_posting.write(skip_set_string + "\n")
-
         offset = offset + len(set_string+'\n')
 
     f.close()
@@ -67,6 +63,7 @@ def read_file(filename):
 
     f.close()
 
+#For stemming and stop words removal (if turned on)
 def process_word(word, use_stop_words=False, remove_numbers=False):
     word = filter(str.isalnum, word)    # Remove non alpha-numeric characters
 
@@ -91,20 +88,11 @@ def add_to_dict(word, filename):
     all_file.add(int(filename))
     if not word in doc_dict:
         doc_dict[word] = set()
-        doc_dict[word].add(int(filename.strip()))
+        doc_dict[word].add(int(filename.strip()))       #need to strip to remove newline character
     elif not word in doc_dict.get(word):
         doc_dict[word].add(int(filename.strip()))
     else:
         pass
-
-def implement_skip_list(posting_list):
-    skip_list = []
-    posting_list = list(posting_list)
-    num_skips = int(math.sqrt(len(posting_list)))
-    for i in range(0, len(posting_list), num_skips):
-        skip_list.append(posting_list[i])
-
-    return skip_list
 
 def usage():
     print "Usage: python index.py -i dir-of-documents -d dictionary-file -p postings-file"
