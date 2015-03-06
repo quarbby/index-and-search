@@ -1,0 +1,10 @@
+Seger AND fed AND currency AND proposals AND GOVERnor AND Martha AND England AND NOT ISDA
+NOT (NOT Seger OR NOT fed OR NOT currency OR NOT proposals OR NOT GOVERnor OR NOT Martha OR NOT England OR ISDA)
+Seger AND fed AND (currency AND proposals AND GOVERnor) AND Martha AND (England AND NOT ISDA)
+Seger AND fed AND NOT (NOT currency OR NOT proposals OR NOT GOVERnor) AND Martha AND NOT (NOT England OR ISDA)
+guidelines AND NOT NOT NOT mellon AND asset AND interest
+futures AND Japan AND risks AND period AND NOT deficit OR NOT British AND NOT Onomichi AND (NOT taiwan OR NOT Margoshes OR NOT paris) AND Finance AND jan AND foreign AND exchanges AND benefit
+(UPS OR trading OR zealand OR Qtly OR suppLy OR unit OR discounts OR reserves OR dlrs OR Ill OR vs OR deposits) AND April AND WMX AND stock
+japan
+futures
+risks
