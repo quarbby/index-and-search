@@ -6,7 +6,7 @@ a0088427@nus.edu.sg
 
 Files included: 
 1. README.txt: This file, containing the algorithm for indexing and searching using the vector space model. 
-2. index.py: Python file for indexing the documents
+2. index.py: Python file for indexing the documents from VSM
 3. search.py: Python file for processing a search query
 4. dictionary.txt: dictionary list represented as <term> <byte position in posting list> <frequency>
 5. postings.txt: posting list with continuous integers of docID where words appear
@@ -20,8 +20,12 @@ Algorithm for index.py:
 3. Perform case-folding on word, i.e. convert word to lower-case. 
 4. There is an option to use stop words when calling the function process_word. Set the use_stop_words flag to true. This uses the nltk English corpus stop words. This is for experimenting for Essay Question 2. If the word is a stop word, then the function returns.
 5. Stem the word using the Porter stemmer provided by NLTK.
-6. Add the word and docID to document dictionary.
-7. Write the dictionary.txt and postings.txt
+6. Add the word and docID to document dictionary. 
+7. Update the document frequency and term frequency where necessary. 
+8. Write the dictionary.txt and postings.txt
+
+dictionary.txt is written as: <term> <line offset in posting file> <doc frequency>
+postings.txt written as: (docID, term frequency) (docID, term frequency) for each term
 
 Algorithm for search.py:
 1. Open query file

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-''' index.py for indexing the data '''
+''' index.py for indexing the data with VSM '''
 
 import sys
 import nltk
@@ -8,6 +8,8 @@ import getopt
 import os
 import math 
 import string
+
+from collections import OrderedDict
 
 from nltk.stem.porter import PorterStemmer
 
@@ -26,27 +28,6 @@ def index():
 
     write_dict_and_postings_file()
 
-# dict file written as: <term> <line offset in posting file> <frequency>
-# postings file just throw all the posting numbers in 
-def write_dict_and_postings_file():
-    f = open(dict_file, 'w')
-    f_posting = open(postings_file, 'w')
-    all_file_list = ' '.join(str(file) for file in sorted(all_file))
-    f_posting.write(all_file_list+'\n')
-    offset = len(all_file_list+'\n')
-    keylist = sorted(doc_dict.keys())
-    for key in keylist:
-        postings_set = sorted(doc_dict[key])
-        f.write(key + " " + str(offset) + " " + str(len(postings_set)) + "\n")    
-
-        set_string = ' '.join(str(post) for post in postings_set)
-        f_posting.write(set_string + "\n")
-
-        offset = offset + len(set_string+'\n')
-
-    f.close()
-    f_posting.close()
-
 def read_file(filename):
     f = open(doc_dir + "/" + filename, 'r')
 
@@ -63,7 +44,34 @@ def read_file(filename):
 
     f.close()
 
-#For stemming and stop words removal (if turned on)
+# dict file written as: <term> <line offset in posting file> <doc freq>
+# postings file written as: (docID, term freq) (docID, term freq)...
+# postings file lines are alternated with full postings and skipped postings
+def write_dict_and_postings_file():
+    f = open(dict_file, 'w')
+    f_posting = open(postings_file, 'w')
+
+    all_file_list = ' '.join(str(file) for file in sorted(all_file))
+    f_posting.write(all_file_list+'\n')
+    offset = len(all_file_list+'\n')
+
+    keylist = sorted(doc_dict.keys())
+
+    for key in keylist:
+        postings_set = OrderedDict(sorted(doc_dict[key]['list'].items(), key= lambda x: x[0]))
+
+        f.write(key + " " + str(offset) + " " + str(len(postings_set)) + str(doc_dict[key]['df']) + "\n")    
+
+        postings_list = [(docID, tf) for docID, tf in postings_set.items()]       # List of tuples generated from postings dictionary (docID, tf)
+        
+        set_string = ' '.join(str(post) for post in postings_list)
+        f_posting.write(set_string + "\n")
+
+        offset = offset + len(set_string+'\n')
+
+    f.close()
+    f_posting.close()
+
 def process_word(word, use_stop_words=False, remove_numbers=False):
     word = filter(str.isalnum, word)    # Remove non alpha-numeric characters
 
@@ -84,15 +92,24 @@ def process_word(word, use_stop_words=False, remove_numbers=False):
     return word
 
 def add_to_dict(word, filename): 
+    filename = filename.strip()
     word = str(word)
     all_file.add(int(filename))
-    if not word in doc_dict:
-        doc_dict[word] = set()
-        doc_dict[word].add(int(filename.strip()))       #need to strip to remove newline character
-    elif not word in doc_dict.get(word):
-        doc_dict[word].add(int(filename.strip()))
-    else:
-        pass
+
+    # new term
+    if not doc_dict.has_key(word):
+        doc_dict[word] = {'list': {}, 'df': 0}
+        doc_dict[word]['df'] += 1
+        doc_dict[word]['list'] = {filename: 1}
+    elif word in doc_dict:
+        # Term appear before, docID not. Add docID, set tf=1, increase df
+        if not doc_dict[word]['list'].has_key(filename):
+            doc_dict[word]['list'][filename] = 1
+            doc_dict[word]['df'] += 1
+        # Term appear in docID before. Increase tf
+        elif doc_dict[word]['list'].has_key(filename):
+            doc_dict[word]['list'][filename] += 1
+
 
 def usage():
     print "Usage: python index.py -i dir-of-documents -d dictionary-file -p postings-file"
