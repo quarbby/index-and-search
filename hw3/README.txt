@@ -18,11 +18,13 @@ Algorithm for index.py:
 1. Open file from directory
 2. Get words from the file. Ignore non-alphanumeric characters such as <
 3. Perform case-folding on word, i.e. convert word to lower-case. 
-4. There is an option to use stop words when calling the function process_word. Set the use_stop_words flag to true. This uses the nltk English corpus stop words. This is for experimenting for Essay Question 2. If the word is a stop word, then the function returns.
+4. There is an option to use stop words when calling the function process_word. Set the use_stop_words flag to true. This uses the nltk English corpus stop words. If the word is a stop word, then the function returns.
 5. Stem the word using the Porter stemmer provided by NLTK.
 6. Add the word and docID to document dictionary. 
 7. Update the document frequency and term frequency where necessary. 
 8. Write the dictionary.txt and postings.txt
+
+Skip lists are not used in this homework.
 
 dictionary.txt is written as: <term> <line offset in posting file> <doc frequency>
 postings.txt written as: (docID, term frequency) (docID, term frequency) for each term

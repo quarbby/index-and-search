@@ -46,7 +46,6 @@ def read_file(filename):
 
 # dict file written as: <term> <line offset in posting file> <doc freq>
 # postings file written as: (docID, term freq) (docID, term freq)...
-# postings file lines are alternated with full postings and skipped postings
 def write_dict_and_postings_file():
     f = open(dict_file, 'w')
     f_posting = open(postings_file, 'w')
