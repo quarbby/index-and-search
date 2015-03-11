@@ -34,7 +34,7 @@ def rank_documents(query):
     query_list = map(process_word, query_list)
 
     scores = [0.0] * len(all_file)
-    length = []
+    length = get_doc_length()
 
     for i in xrange(len(query_list)): 
         word = query_list[i]
@@ -47,13 +47,13 @@ def rank_documents(query):
             for (docID, tf) in postings_list:
                 scores[docID] += calc_weight_td(docID, tf) * weight_tq
 
-    length = get_doc_length(length)
     scores = list(np.array(scores)/np.array(length))
 
     result = get_top_results(scores)
 
     return result
 
+# Do we want to stem stop words out?
 def process_word(word):
     word = word.lower()
     return stemmer.stem(word)
@@ -66,8 +66,7 @@ def get_postings_list(word):
     with open(postings_file, 'r') as posting:
         posting.seek(int(dict_words[word][0]))
         line = posting.readline().strip()
-        # TODO: trouble trouble, not sure how to read the string of line!
-        # Want to store as [(a,b), (a,b)...]
+
         while len(line) > 0:
             _,_,rest = line.partition(start)
             result,_,line = rest.partition(end)
@@ -121,11 +120,29 @@ def inv_doc_freq(word):
 def normalise(vector):
     return math.sqrt(sum(x**2 for x in vector))
 
-def get_doc_length(vector):
-    return map(normalise, vector)
+def get_doc_length():
+    doc_length = []
+
+    for doc in set(all_file):
+        vector = []
+        # We're supposed to generate a document vector
+        # Not sure most efficient way to do it... we may want to use another data structure? 
+
+        doc_length.append(vector)
+
+    for i in xrange(len(doc_length):
+        doc_length[i] = normalise(doc_length[i])        
+
+    return doc_length
 
 def calculate_weight_td(docID, tf):
     return log_term_freq(tf) * 1.0
+
+# Meta data of all the files stored
+def read_meta():
+    global all_file
+    with open(postings_file, 'r') as f:
+        all_file = map(lambda x: int(x), f.readline().strip().split())
 
 # Dict stored as term: (line offset, freq)
 def read_dict():
@@ -137,6 +154,7 @@ def read_dict():
 
 def search():
     read_dict()
+    read_meta()
 
     with open(output_file, 'w') as out, open(query_file, 'r') as f:
         for query in f:
