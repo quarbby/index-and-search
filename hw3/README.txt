@@ -31,20 +31,16 @@ postings.txt written as: (docID, term frequency) (docID, term frequency) for eac
 
 Algorithm for search.py:
 1. Open query file
-2. For each query, convert it to post-fix form using Shunting-Yard algorithm
-3. Process the post-fix querry linearly:
-	3a For each term in the query:
-		if it's a term:
-			stem the term
-			retrieve posting list
-		else if it's a binary operation, retrieve the top 2 intermediate result on the result stack and perform operation, then put result on stack
-		else if it's a unary operation, retrieve the top intermediate result and perform operation, then put result on stack
-
-4. Output the result
-
-Note:
-1. Only the merging for AND operation is done by iterating manually in order to speed up with skip pointers. In other cases, since skip pointers do not improve the performance, default python set operations were used instead to reduce code length and prevent bugs
-2. Skip pointers are implemented implicitly, i.e they are offsets calculated on the fly as we iterate through the posting lists instead of fixed, offline calculated pointers generated during indexing phase
+2. For each query, split the query up into words. 
+3. Initialise a scores vector to 0 for scores of all documents in the corpus.
+3. Check if the word exists in dictionary. If it doesn't, don't process the word.  
+5. For each query word:
+    5a. Calculate the weight W_t,q, using the log of term frequency and inverse document frequency.
+    5b. Get postings list of the word.
+    5c. Calculate the scores of each document for the word. 
+6. Normalise the scores 
+7. Rank the scores
+8. Output the result
 
 References: 
 Resources from the Internet, i.e. Stack Overflow, Python documentation for python coding
