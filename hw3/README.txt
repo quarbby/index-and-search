@@ -26,8 +26,8 @@ Algorithm for index.py:
 
 Skip lists are not used in this homework.
 
-dictionary.txt is written as: <term> <line offset in posting file> <doc frequency>
-postings.txt written as: (docID, term frequency) (docID, term frequency) for each term
+dictionary.txt is written as: <term> <byte offset in posting file> <doc frequency>
+postings.txt written as: docID,term_frequency docID,term frequency for each term
 
 Algorithm for search.py:
 1. Open query file

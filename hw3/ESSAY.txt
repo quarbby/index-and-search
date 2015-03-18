@@ -13,7 +13,7 @@ We can also store n-gram models, or phrases in the document. So the document's f
 
 But this is very computationally intensive. 
 
-2.
+2. Long documents and queries will definitely take longer time to process. Additionally, long documents will have higher score due to the way we normalize. The longer the document, the higher the term frequency can be as there are more chance for a term to be included in a document. The implemented normalization won't address the issue, since upon normalization by Euclidean length, we loose information regarding length of a document. ltc.lnc is still not sufficient, since we still loose information regarding length of document, hence the said problem remains unsolved.
 
 3. Yes.
 Some field data is better than none and can be useful in determining the relevance of the document to the query. As not all the documents have metadata, we shouldn't place too much emphasis on it. So maybe we can give metadata lesser weightage than the result retrieved from the documents itself. 
