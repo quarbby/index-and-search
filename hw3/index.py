@@ -51,6 +51,7 @@ def read_file(filename):
     return doc_len
 
 def process_word(word, remove_stop_words=False, remove_numbers=False):
+    word = filter(str.isalnum, word)    # Remove non alpha-numeric character
 
     word = word.lower()
 

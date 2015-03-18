@@ -27,11 +27,11 @@ stemmer = PorterStemmer()
 
 def process_query(query):
     ranked_result = rank_documents(query)
-
     return ranked_result
 
 def rank_documents(query):
     result = []
+    num_results = 10
 
     query_list = query.strip().split()
     query_list = map(process_word, query_list)
@@ -54,12 +54,12 @@ def rank_documents(query):
     res = []
     for doc in scores:
         if scores[doc] > 0:
-            res.append((doc,scores[doc]/doc_len[doc]))
-    scores = res
+            if (len(res) < num_results):        #if the heap is not full, continue adding
+                res.append((float(scores[doc])/float(doc_len[doc]),int(doc)))
+            else:                               #if it's full, then push and pop to maintain the size of the heap
+                heapq.heappushpop(res, (float(scores[doc])/float(doc_len[doc]),int(doc)))
 
-    result = get_top_results(scores)
-
-    return result
+    return sorted(res, reverse=True)
 
 # Do we want to stem stop words out?
 def process_word(word):
@@ -86,14 +86,6 @@ def word_in_dict(word):
         return True
     else:
         return False
-
-def get_top_results(scores):
-    num_results = 10
-    
-    # Get the non-zero indices and original values
-    temp_results = sorted(scores, key=lambda x: x[1], reverse=True)[:num_results]    # Sort and get top k documents
-
-    return temp_results
 
 '''
 Helpers for ranking
@@ -143,7 +135,7 @@ def search():
 
     with open(output_file, 'w') as out, open(query_file, 'r') as f:
         for query in f:
-            out.write(" ".join(str(x[0]) for x in process_query(query)) + '\n')
+            out.write(" ".join(str(x[1]) for x in process_query(query)) + '\n')
 
 def usage():
     print "Usage python search.py -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results"
