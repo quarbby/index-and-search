@@ -119,7 +119,10 @@ def read_meta():
         doc_len_line = f.readline().split()
         for doc in doc_len_line:
             temp = doc.split(',')
-            doc_len[int(temp[0])] = float(temp[1])
+            try:
+                doc_len[int(temp[0])] = float(temp[1])
+            except: 
+                pass
 
 # Dict stored as term: (line offset, freq)
 def read_dict():
