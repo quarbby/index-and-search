@@ -1,2 +1,2 @@
 #!/bin/sh
-python index.py -i ../../nltk_data/corpora/reuters/training -d dictionary_lynn.txt -p postings_lynn.txt
+python index.py -i ../../patsnap-corpus -d dictionary.txt -p dictionary.txt
