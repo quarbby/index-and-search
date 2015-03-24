@@ -20,8 +20,8 @@ output_file = ""
 doc_len = {}
 ipc_dict = {}
 words_dict = {}
-total_num_docs
-total_num_ipc
+total_num_docs = 0
+total_num_ipc = 0
 
 def search():
 	read_meta()
@@ -30,6 +30,11 @@ def search():
 	query_title_list, query_desc_list = utils.XML_query_parser(query_file)
 
 	write_output_file(output)
+
+def get_zone_weight(zone_type):
+    zone_weights = {'title': 0.30, 'desc': 0.40, 'ipc': 0.30}
+    return zone_weights[zone_type.lower()]
+
 
 '''
 I/O Helpers

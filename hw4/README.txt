@@ -10,20 +10,26 @@ General Algorithm for Indexing:
 1. Read the corpus file
 2. Extract the title, abstract and IPC Class
 3. Perform stemming then lemmatization on the words in the title and abstract
-4. Build a corpus dictionary with the merged word lists of the title and the abstract. 
+4. Build dictionaries with the word lists of the title and the abstract. 
+	4a. Add to a global title dictionary the words in the title
+	4b. Add to a global title dictionary the words in the abstract
+	4c. Build a corpus dictionary with both title and abstract word lists. 
 5. Calculate the document length by using log length normalisation from the corpus dictionary. 
+	i.e. We do not differentiate the words from the title and the abstract while calculating document length.
 6. Add the document IPC to a dictionary of IPC Class
 7. Write the dictionary and postings file: 
 
 	a. dictionary.txt contains the IPC dictionary and term dictionary:
 	- IPC dictionary written as: <ipc> <byte offset in posting file>
-	- Term dictionary written as: <term> <byte offset in posting file> <doc freq>
+	- Title Term dictionary written as: <term> <byte offset in posting file> <doc freq>
+	- Abstract Term dictionary written as: <term> <byte offset in posting file> <doc freq>
 
 	b. postings.txt contains the IPC postings, document lengths and document postings: 
 	- First line contains total number IPC and total number of docs tabbed spaced
 	- IPC postings written as: <IPC> <list of docs> 
 	- doc lengths written as: <doc> <doc_length>
-	- doc postings written as: (docID, term freq) (docID, term freq)...
+	- title doc postings written as: (docID, term freq) (docID, term freq)...
+	- abstract doc postings written as: (docID, term freq) (docID, term freq)...
 
 *** ANY SUPER INTERESTING IDEAS FOR EXTRA MARKS? :) **
 
@@ -39,10 +45,15 @@ General Algorithm for Searching:
 6. Perform stemming then lemmatization on the words in the title and description
 
 *** THE RANDOM IDEA ***
+*** NOT VERY SURE PLEASE HELP ON THIS ***
 7. Perform Query Expansion on the words in the title (Optional. I don't know how to do them either)
-8. Use the LNC.LTC VSM to get out the documents as per HW3 but we don't rank them
-9. Get the IPC Class of the documents returned then search the IPC Dictionary for more documents in the same IPC class
-10. Return the top K documents in the IPC class doc list that are similar to the query (defined by cosine normalisation)
+8. Use the LNC.LTC VSM with Weighted Zone Scoring to get out the documents as per HW3 but we don't need to rank them
+i.e. 
+If term in query title & doc title => doc score += score + zone title weight + zone title weight
+term in query title & doc abstract => doc score += score + zone title weight + zone abstract weight
+... 
+10. Get the IPC Class of the documents returned then search the IPC Dictionary for more documents in the same IPC class
+11. Return the top K documents in the IPC class doc list that are similar to the query (defined by cosine normalisation)
 
 == Files included with this submission ==
 
