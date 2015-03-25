@@ -10,6 +10,10 @@ from nltk.stem import WordNetLemmatizer
 
 from xml.dom import minidom
 
+import urllib2
+import json
+import pprint
+
 stop_words = set(nltk.corpus.stopwords.words('english'))
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
@@ -83,3 +87,47 @@ def get_word_list(string):
 			word_list.append(word.encode('utf-8'))
 
 	return word_list
+
+# Input: A list of words i.e. ['washer', 'bubble']
+# Output: Queried results from Google Patent Search organised by [[list of words in title], [list of words in abstract]] 
+def query_expansion(word_list):
+	num_response = 5	# Just taking the top 5 number of responses
+
+	google_url = 'https://ajax.googleapis.com/ajax/services/search/patent?v=1.0&q='
+	query_string = "%20".join(str(word) for word in word_list)
+
+	# Send the request to Google Server
+	google_url += query_string
+	request = urllib2.Request(google_url)
+	response = urllib2.urlopen(request)
+
+	# Process JSON
+	results = json.load(response)
+	response_data = results['responseData']['results'] 
+
+	if response_data is None:
+		return
+
+	count = 0
+	queried_results = []
+	for response in response_data:
+		if count > num_response:
+			break
+
+		title = response['titleNoFormatting'].encode('ascii', 'ignore')
+		title_list = get_word_list(title)
+
+		abstract = response['content'].encode('ascii', 'ignore')
+		abstract_list = get_word_list(abstract)
+
+		title_and_query = [title_list, abstract_list]
+		queried_results.append(title_and_query)
+
+		count += 1
+
+
+	#pprint.pprint(response_data)
+
+	#print queried_results
+
+	return queried_results

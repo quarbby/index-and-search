@@ -43,10 +43,14 @@ General Algorithm for Searching:
 4. Remove the words "Relevant documents will describe", since these words repeat over the queries
 5. Extract the title and description from the query file
 6. Perform stemming then lemmatization on the words in the title and description
+7. Performed Query Expansion on the words in the title. 
+	a. Made used of Google Patent Search JSON Developer Guide
+	b. Parsed the already words of the title to the Google Patent Search at https://ajax.googleapis.com/ajax/services/search/patent
+	c. Recieved back the JSON object, extracted out the title and the content into lists of words 
+	d. *** NOT DONE *** Add these words to the list of words we can search through the database for document IDs
 
 *** THE RANDOM IDEA ***
 *** NOT VERY SURE PLEASE HELP ON THIS ***
-7. Perform Query Expansion on the words in the title (Optional. I don't know how to do them either)
 8. Use the LNC.LTC VSM with Weighted Zone Scoring to get out the documents as per HW3 but we don't need to rank them
 i.e. 
 If term in query title & doc title => doc score += score + zone title weight + zone title weight
@@ -94,5 +98,6 @@ assignment and state their role>
 A general structure of the program is taken from our previous homework assignments 2 and 3.
 Python MiniDom for XML parsing: https://wiki.python.org/moin/MiniDom
 NLTK Documentation for Porter Stemmer and Word Net Lemmatizer 
+Query Expansion: Google JSON Developer Guide (https://developers.google.com/patent-search/v1/jsondevguide)
 Plus many Stack Overflow searches 
 

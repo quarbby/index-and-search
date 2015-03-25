@@ -28,6 +28,7 @@ def search():
 	read_dict()
 
 	query_title_list, query_desc_list = utils.XML_query_parser(query_file)
+    queried_result_from_google = utils.query_expansion(query_title_list)
 
 	write_output_file(output)
 
