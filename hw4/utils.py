@@ -7,6 +7,7 @@ General utility functions such as language parsing and XML parsing
 import nltk
 from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
+from nltk.corpus import wordnet
 
 from xml.dom import minidom
 
@@ -88,6 +89,19 @@ def get_word_list(string):
 
 	return word_list
 
+# Input: A list of words
+# Output: Query expansion from wordnet 
+def query_expansion_wordnet(word_list):
+    expanded_query = []
+    for word in word_list:
+        sync = wordnet.synsets(word)
+        names = l.name() for s in syncs for l in s.lemmas()]
+        expanded_query += names
+
+    expanded_query = map(make_utf, expanded_query)
+    return expanded_query
+
+
 # Input: A list of words i.e. ['washer', 'bubble']
 # Output: Queried results from Google Patent Search organised by [[list of words in title], [list of words in abstract]] 
 def query_expansion(word_list):
@@ -131,3 +145,6 @@ def query_expansion(word_list):
 	#print queried_results
 
 	return queried_results
+
+def make_utf(word):
+    return word.encode('utf-8')

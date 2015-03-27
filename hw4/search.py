@@ -24,13 +24,16 @@ total_num_docs = 0
 total_num_ipc = 0
 
 def search():
-	read_meta()
-	read_dict()
+    read_meta()
+    read_dict()
 
-	query_title_list, query_desc_list = utils.XML_query_parser(query_file)
+    query_title_list, query_desc_list = utils.XML_query_parser(query_file)
+    # If you want to use query from google
     queried_result_from_google = utils.query_expansion(query_title_list)
+    # If you want to use wordnet query
+    queried_result_from_wordnet = utils.query_expansion_wordnet(query_title_list)
 
-	write_output_file(output)
+    write_output_file(output)
 
 def get_zone_weight(zone_type):
     zone_weights = {'title': 0.30, 'desc': 0.40, 'ipc': 0.30}
