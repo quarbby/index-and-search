@@ -32,6 +32,7 @@ General Algorithm for Indexing:
 	- abstract doc postings written as: (docID, term freq) (docID, term freq)...
 
 *** ANY SUPER INTERESTING IDEAS FOR EXTRA MARKS? :) **
+* We could consider Relevance feedback mentioned to us in lecture 10 
 
 At the same time, maintain another dictionary for the IPC Class. This goes: 
 <class> <docs>
@@ -76,7 +77,7 @@ postings.txt -- The postings file of indexed PatSnap corpus
 
 Please initial one of the following statements.
 
-[X] We, A0119646X, A0088 427U, and A certify that I have followed the CS 3245 Information
+[X] We, A0119646X, A0088427U and A0086894H certify that we have followed the CS 3245 Information
 Retrieval class guidelines for homework assignments.  In particular, I
 expressly vow that I have followed the Facebook rule in discussing
 with others in doing the assignment and did not take notes (digital or
