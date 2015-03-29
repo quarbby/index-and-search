@@ -32,7 +32,7 @@ General Algorithm for Indexing:
 	- abstract doc postings written as: (docID, term freq) (docID, term freq)...
 
 *** ANY SUPER INTERESTING IDEAS FOR EXTRA MARKS? :) **
-* We could consider Relevance feedback mentioned to us in lecture 10 
+• We could consider Relevance feedback mentioned to us in lecture 10 - Jin
 
 At the same time, maintain another dictionary for the IPC Class. This goes: 
 <class> <docs>
