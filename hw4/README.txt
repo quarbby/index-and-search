@@ -12,7 +12,7 @@ General Algorithm for Indexing:
 3. Perform stemming then lemmatization on the words in the title and abstract
 4. Build dictionaries with the word lists of the title and the abstract. 
 	4a. Add to a global title dictionary the words in the title
-	4b. Add to a global title dictionary the words in the abstract
+	4b. Add to a global abstract dictionary the words in the abstract
 	4c. Build a corpus dictionary with both title and abstract word lists. 
 5. Calculate the document length by using log length normalisation from the corpus dictionary. 
 	i.e. We do not differentiate the words from the title and the abstract while calculating document length.
