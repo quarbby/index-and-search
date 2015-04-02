@@ -1,105 +1,118 @@
 #!/usr/bin/python
 
-'''
-Main file used for indexing the corpus
-'''
-
-import sys
-import getopt
-import os
-import math 
-import string
-
+""" This program is the indexer for the corpus """
 from collections import OrderedDict
-
+from collections import defaultdict
+import string
+import getopt
 import utils
+import math 
+import sys
+import os
 
-doc_dir = ""
-dict_file = ""
-postings_file = ""
+doc_dir = ""        # corpus directory path
+dict_file = ""      # dictionary file path
+postings_file = ""  # postings file path
 
-title_dict = {}
-abstract_dict = {}
-doc_length = {}
-ipc_dict = {}
+title_dict = defaultdict(lambda: {'list': defaultdict(int), 'df': 0})       # {"<term>": {"list": {"<filename>": <tf>}, "df": <df>}}
+abstract_dict = defaultdict(lambda: {'list': defaultdict(int), 'df': 0})    # {"<term>": {"list": {"<filename>": <tf>}, "df": <df>}}
+doc_length = {}                                                             # {"<filename>": <length of document vector>}
+ipc_dict = defaultdict(lambda: [])                                          # {"<IPC class>": [<filename>...]}
 
-total_num_doc = 0
-total_num_ipc = 0
+total_num_doc = 0   # total number of documents indexed
+total_num_IPC = 0   # total number of IPC classes indexed
 
+""" indexes each document in corpus """
 def index():
-	global total_num_doc
+    global total_num_doc
 
     for filename in os.listdir(doc_dir):
-    	total_num_doc += 1
+        total_num_doc += 1
 
-    	title_list, abstract_list, ipc = utils.XML_corpus_parser(filename)
+        title_list, abstract_list, IPC = utils.XML_corpus_parser(doc_dir + filename)
 
-    	corpus_dict = build_corpus_dict(title_list, abstract_list)
-    	doc_len = get_doc_len(corpus_dict)
-    	doc_length[filename] = doc_len
+        corpus_dict = build_corpus_dict(title_list, abstract_list, filename) # {"<term>": term frequency}
+        doc_len = get_doc_len(corpus_dict) # document vector length
+        doc_length[filename] = doc_len     # update doc_length dict
 
-    	add_to_ipc_dict(ipc, filename)
+        add_to_ipc_dict(IPC, filename)
 
     write_dict_and_postings_file()
 
-def build_corpus_dict(title_list, abstract_list):
-    corpus_dict = {}
+"""
+Add each term in title and abstract to theuir respective zones in the dictionary.
+Returns a corpus_dict which maps term to term frequencies in the document
+Params:
+    title_list:     a list of terms in title zone for the document
+    abstract_list:  a list of terms in abstract zone for the document
+    filename:       document id
+"""
+def build_corpus_dict(title_list, abstract_list, filename):
+    corpus_dict = defaultdict(int)    # {"<term>": term frequency}
 
-    # Title List first 
-	for word in title_list: 
-		if not word in corpus_dict:
-			corpus_dict[word] = 0
-		corpus_dict[word] += 1
-		add_to_dict(title, word, filename)
+    # Title List
+    for term in title_list: 
+        corpus_dict[term] += 1
+        add_to_dict("title", term, filename)
 
     # Abstract List
-    for word in title_list: 
-        if not word in corpus_dict:
-            corpus_dict[word] = 0
-        corpus_dict[word] += 1
-        add_to_dict(abstract, word, filename)
+    for term in abstract_list: 
+        corpus_dict[term] += 1
+        add_to_dict("abstract", term, filename)
 
-	return corpus_dict
+    return corpus_dict
 
+"""
+Returns the document vector length for the given term frequencies map
+Params:
+    corpus_dict:    maps term to term frequencies
+"""
 def get_doc_len(corpus_dict):
-	doc_len = 0.0
-	for word in corpus_dict:
-		doc_len += (1 + math.log10(corpus_dict[word])) ** 2
-	return math.sqrt(doc_len)
+    doc_len = 0.0  # accumulator for sum of squares
+    for term in corpus_dict:
+        w_td = (1 + math.log10(corpus_dict[term]))    # component weight
+        doc_len += w_td ** 2                          # accumulate sum of squares         
+    return math.sqrt(doc_len) # return euclidean length
 
-def add_to_dict(list_type, word, filename): 
+"""
+Adds given term to its respetive zone in the dictionary
+Params:
+    list_type:  "title" | "abstract"
+    term:       term to be added to dictionary
+    filename:   document id
+"""
+def add_to_dict(list_type, term, filename): 
     filename = str(filename.strip())
-    word = str(word)
+    term = str(term)
 
+    # determine corresponding dictionary for zone
+    doc_dict = {}
     if list_type == "title":
         doc_dict = title_dict
     elif list_type == "abstract":
         doc_dict = abstract_dict
 
-    # new term
-    if not doc_dict.has_key(word):
-        doc_dict[word] = {'list': {}, 'df': 0}
-        doc_dict[word]['df'] += 1
-        doc_dict[word]['list'] = {filename: 1}
-    elif word in doc_dict:
-        # Term appear before, docID not. Add docID, set tf=1, increase df
-        if not doc_dict[word]['list'].has_key(filename):
-            doc_dict[word]['list'][filename] = 1
-            doc_dict[word]['df'] += 1
-        # Term appear in docID before. Increase tf
-        elif doc_dict[word]['list'].has_key(filename):
-            doc_dict[word]['list'][filename] += 1
+    # increase df for term if term not yet registered in term list
+    if filename not in doc_dict[term]['list']:
+        doc_dict[term]['df'] += 1
+   
+    doc_dict[term]['list'][filename] += 1 # increment tf
 
-def add_to_ipc_dict(ipc, filename):
-	global total_num_ipc
+"""
+Index IPC class
+Params:
+    IPC:        IPC class   
+    filename:   document id
+"""
+def add_to_ipc_dict(IPC, filename):
+    global total_num_IPC
 
-	filename = str(filename.strip())
-	ipc = str(ipc.strip())
+    filename = str(filename.strip())
+    IPC = str(IPC.strip())
 
-	if not ipc_dict.has_key(ipc):
-		ipc_dict[ipc] = []
-		total_num_ipc += 1
-	ipc_dict[ipc].append(filename)
+    if IPC not in ipc_dict:
+        total_num_IPC += 1            # update total number of IPC classes
+    ipc_dict[IPC].append(filename)    # append filename to list for IPC
 
 '''
 dict file 
@@ -120,7 +133,7 @@ def write_dict_and_postings_file():
     f_posting = open(postings_file, 'w')
 
     # Writing number of docs and IPC to postings file 
-    total_num_str = str(total_num_ipc) + '\t' + str(total_num_doc) + '\n'
+    total_num_str = str(total_num_IPC) + '\t' + str(total_num_doc) + '\n'
     f_posting.write(total_num_str)
     offset = len(total_num_str)
 
@@ -131,26 +144,26 @@ def write_dict_and_postings_file():
 
     # Writing IPC postings into postings and dictionary files
     ipc_keys = ipc_dict.keys()
-    ipc_postings = OrderedDict(sorted(ipc_dict[key].items(), key = lambda x: x[0]))
+    ipc_postings = OrderedDict(sorted(ipc_dict.items()))
 
     for key in ipc_keys:
-    	f_dict.write(key + " " + str(offset) + " " + str(ipc_dict[key]) + "\n")
+        f_dict.write(key + " " + str(offset) + " " + str(ipc_dict[key]) + "\n")
 
-    	ipc_postings_list = ipc_postings[key]
-    	ipc_postings_str = ' '.join(str(post) for post in postings_list) + "\n"
-    	f_posting.write(ipc_postings_str)
+        ipc_postings_list = ipc_postings[key]
+        ipc_postings_str = ' '.join(str(post) for post in ipc_postings_list) + "\n"
+        f_posting.write(ipc_postings_str)
 
-    	offset = offset + len(ipc_postings_str)
+        offset = offset + len(ipc_postings_str)
 
     # Writing title dictionary postings into postings and dictionary file 
     keylist = title_dict.keys()
 
     for key in keylist:
-        postings_set = OrderedDict(sorted(title_dict[key]['list'].items(), key= lambda x: x[0]))
+        postings_set = OrderedDict(sorted(title_dict[key]['list'].items()))
 
         f_dict.write(key + " " + str(offset) + " " + str(title_dict[key]['df']) + "\n")
 
-		# List of tuples generated from postings dictionary (docID, tf)
+        # List of tuples generated from postings dictionary (docID, tf)
         postings_list = [str(docID) + ','+ str(tf) for docID, tf in postings_set.items()]       
         
         set_string = ' '.join(str(post) for post in postings_list) + "\n"
@@ -162,7 +175,7 @@ def write_dict_and_postings_file():
     keylist = abstract_dict.keys()
 
     for key in keylist:
-        postings_set = OrderedDict(sorted(doc_dict[key]['list'].items(), key= lambda x: x[0]))
+        postings_set = OrderedDict(sorted(doc_dict[key]['list'].items()))
 
         f_dict.write(key + " " + str(offset) + " " + str(abstract_dict[key]['df']) + "\n")
 
@@ -202,4 +215,4 @@ if __name__ == '__main__':
         usage()
         sys.exit(2)
 
-    index()
+    index() # run index

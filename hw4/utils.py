@@ -1,150 +1,144 @@
 #!/usr/bin/python
 
-'''
-General utility functions such as language parsing and XML parsing
-'''
-
-import nltk
-from nltk.stem import PorterStemmer
+""" General utility functions such as language parsing and XML parsing """
 from nltk.stem import WordNetLemmatizer
+from nltk.stem import PorterStemmer
 from nltk.corpus import wordnet
-
 from xml.dom import minidom
-
 import urllib2
-import json
 import pprint
+import json
+import nltk
 
-stop_words = set(nltk.corpus.stopwords.words('english'))
-stemmer = PorterStemmer()
-lemmatizer = WordNetLemmatizer()
+stop_words = set(nltk.corpus.stopwords.words('english'))    # stopwords set
+stemmer = PorterStemmer()                                   # stemming instance
+lemmatizer = WordNetLemmatizer()                            # lemmatizing instance
 
+"""
+Returns processed word after casefolding, stopword filtering, lemmatization and stemming
+Params:
+    word:               word to process 
+    remove_stop_words:  if removing stopwords
+    remove_numbers:     if removing numbers
+"""
 def process_word(word, remove_stop_words=False, remove_numbers=False):
-    word = filter(str.isalnum, word)    # Remove non alpha-numeric character
+    term = filter(str.isalnum, word)    # Remove non alpha-numeric character
+    term = term.lower()                 # casefolding
 
-    word = word.lower()
+    if (remove_stop_words and term in stop_words) or (remove_numbers and term.isdigit()):
+        return None
+    term = lemmatizer.lemmatize(term)   # lematization
+    term = stemmer.stem(term)           # stemming
 
-    if remove_stop_words and word in stop_words:
-            return 
+    return term if (len(term) > 2) else None
 
-    if remove_numbers and word.isdigit():
-            return
-
-    word = stemmer.stem(word)
-    word = lemmatizer.lemmatize(word)
-
-    if (len(word) < 3):
-        return
-    return word
-
-# Input: Query File Name 
-# Output: A List of processed words from the title and description of the query
+"""
+Returns two Lists of processed terms, one from the title and one from the description of the query
+Params:
+    filename: document ID
+"""
 def XML_query_parser(filename):
-	dom = minidom.parse(filename)
-	title = dom.getElementsByTagName('title')[0].firstChild.nodeValue.strip().encode('utf-8')
-	description = dom.getElementsByTagName('description')[0].firstChild.nodeValue.strip().encode('utf-8')
+    dom = minidom.parse(filename)
+    title = dom.getElementsByTagName('title')[0].firstChild.nodeValue.strip().encode('utf-8')
+    description = dom.getElementsByTagName('description')[0].firstChild.nodeValue.strip().encode('utf-8')
+    description = description[32:] # Remove the words 'Relevant documents will describe' from the description
+    return get_terms_list(title), get_terms_list(description)
 
-	description = remove_words(description)
-
-	query_title_list = get_word_list(title)
-	query_desc_list = get_word_list(description)
-
-	return query_title_list, query_desc_list
-
-# Remove the words "Relevant documents will describe" from the description
-def remove_words(description):
-	return description.replace("Relevant documents will describe", "")
-
-# Input: Corpus file name
-# Output: List of processed words from title, abstract and the IPC number
+"""
+Returns list of processed words from title, abstract and the IPC number
+Params:
+    filename: document ID
+"""
 def XML_corpus_parser(filename):
-	title = ""
-	abstract = ""
-	IPC = ""
+    title = ""
+    abstract = ""
+    IPC = ""
 
-	dom = minidom.parse(filename)
-	for node in dom.getElementsByTagName('str'):
-		if node.firstChild is not None:
-			tag = node.attributes.item(0).value.strip()
-			value = node.firstChild.nodeValue.strip().encode('utf-8')
+    dom = minidom.parse(filename)
+    for node in dom.getElementsByTagName('str'):
+        if node.firstChild:
+            tag = node.attributes.item(0).value.strip()
+            value = node.firstChild.nodeValue.strip().encode('utf-8')
 
-			if tag == 'Title': 
-				title = value
-			elif tag == 'Abstract':
-				abstract = value
-			elif tag == "IPC Class":
-				IPC = value
+            if tag == 'Title': 
+                title = value
+            elif tag == 'Abstract':
+                abstract = value
+            elif tag == "IPC Class":
+                IPC = value
 
-	get_word_list(title)
-	return [get_word_list(title), get_word_list(abstract), IPC]
+    get_terms_list(title)
+    return get_terms_list(title), get_terms_list(abstract), IPC
 
-def get_word_list(string):
-	word_list = []
+"""
+Returns the list of terms obtained from processing the given string
+Params:
+    string: string to be processed
+"""
+def get_terms_list(string):
+    terms_list = []
 
-	string_split = nltk.word_tokenize(string)
-	for word in string_split:
-		word = process_word(word, remove_stop_words=True, remove_numbers=True)
-		if word:
-			word_list.append(word.encode('utf-8'))
+    string_split = nltk.word_tokenize(string)
+    for word in string_split:
+        term = process_word(word, remove_stop_words=True, remove_numbers=True)
+        if term:
+            terms_list.append(word.encode('utf-8'))
 
-	return word_list
+    return terms_list
 
-# Input: A list of words
-# Output: Query expansion from wordnet 
+"""
+Returns the expanded query for a given list of words using wordnet
+Params:
+    world_list: list of words to be expanded upon
+"""
 def query_expansion_wordnet(word_list):
     expanded_query = []
     for word in word_list:
         sync = wordnet.synsets(word)
-        names = l.name() for s in syncs for l in s.lemmas()]
+        names = [l.name() for s in syncs for l in s.lemmas()]
         expanded_query += names
 
     expanded_query = map(make_utf, expanded_query)
     return expanded_query
 
-
-# Input: A list of words i.e. ['washer', 'bubble']
-# Output: Queried results from Google Patent Search organised by [[list of words in title], [list of words in abstract]] 
+"""
+Returns expanded query results from Google Patent Search organised by [[list of words in title], [list of words in abstract]]
+Params:
+    word_list: A list of words i.e. ['washer', 'bubble']
+"""
 def query_expansion(word_list):
-	num_response = 5	# Just taking the top 5 number of responses
+    num_response = 5    # Just taking the top 5 number of responses
 
-	google_url = 'https://ajax.googleapis.com/ajax/services/search/patent?v=1.0&q='
-	query_string = "%20".join(str(word) for word in word_list)
+    # prepare URL for ajax call
+    google_url = 'https://ajax.googleapis.com/ajax/services/search/patent?v=1.0&q='
+    query_string = "%20".join(str(word) for word in word_list)
 
-	# Send the request to Google Server
-	google_url += query_string
-	request = urllib2.Request(google_url)
-	response = urllib2.urlopen(request)
+    # Send the request to Google Server
+    google_url += query_string
+    request = urllib2.Request(google_url)
+    response = urllib2.urlopen(request)
 
-	# Process JSON
-	results = json.load(response)
-	response_data = results['responseData']['results'] 
+    # Process JSON
+    results = json.load(response)
+    response_data = results['responseData']['results'] 
 
-	if response_data is None:
-		return
+    if not response_data:
+        return None
 
-	count = 0
-	queried_results = []
-	for response in response_data:
-		if count > num_response:
-			break
+    queried_results = []
+    for response in response_data[:num_response]:
+        # obtain list of terms from title
+        title = response['titleNoFormatting'].encode('ascii', 'ignore')
+        title_list = get_terms_list(title)
+        # obtain list of terms from abstract
+        abstract = response['content'].encode('ascii', 'ignore')
+        abstract_list = get_terms_list(abstract)
 
-		title = response['titleNoFormatting'].encode('ascii', 'ignore')
-		title_list = get_word_list(title)
+        queried_results.append([title_list, abstract_list])
 
-		abstract = response['content'].encode('ascii', 'ignore')
-		abstract_list = get_word_list(abstract)
-
-		title_and_query = [title_list, abstract_list]
-		queried_results.append(title_and_query)
-
-		count += 1
-
-
-	#pprint.pprint(response_data)
-
-	#print queried_results
-
-	return queried_results
+    #pprint.pprint(response_data)
+    #print queried_results
+    return queried_results
 
 def make_utf(word):
     return word.encode('utf-8')
