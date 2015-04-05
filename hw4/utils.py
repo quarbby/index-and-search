@@ -39,10 +39,15 @@ Params:
 """
 def XML_query_parser(filename):
     dom = minidom.parse(filename)
+    # get and format title and description strings
     title = dom.getElementsByTagName('title')[0].firstChild.nodeValue.strip().encode('utf-8')
     description = dom.getElementsByTagName('description')[0].firstChild.nodeValue.strip().encode('utf-8')
     description = description[32:] # Remove the words 'Relevant documents will describe' from the description
-    return get_terms_list(title), get_terms_list(description)
+    title = title.replace('\n', '')
+    description = description.replace('\n', '')
+    
+    # Note: we only tokenize because we cannot process (stem) the words before query expansion
+    return [word for word in title.split(' ') if len(word)], [word for word in description.split(' ') if len(word)]
 
 """
 Returns list of processed words from title, abstract and the IPC number
@@ -82,7 +87,7 @@ def get_terms_list(string):
     for word in string_split:
         term = process_word(word, remove_stop_words=True, remove_numbers=True)
         if term:
-            terms_list.append(word.encode('utf-8'))
+            terms_list.append(term.encode('utf-8'))
 
     return terms_list
 
@@ -94,9 +99,10 @@ Params:
 def query_expansion_wordnet(word_list):
     expanded_query = []
     for word in word_list:
-        sync = wordnet.synsets(word)
-        names = [l.name() for s in syncs for l in s.lemmas()]
-        expanded_query += names
+        synsets = wordnet.synsets(word)
+        names = [l.name() for s in synsets for l in s.lemmas()]
+        for name in names:
+            expanded_query += name.split('_')   # phrases are seperated by underscore
 
     expanded_query = map(make_utf, expanded_query)
     return expanded_query
@@ -106,7 +112,7 @@ Returns expanded query results from Google Patent Search organised by [[list of 
 Params:
     word_list: A list of words i.e. ['washer', 'bubble']
 """
-def query_expansion(word_list):
+def query_expansion_google(word_list):
     num_response = 5    # Just taking the top 5 number of responses
 
     # prepare URL for ajax call
@@ -115,6 +121,8 @@ def query_expansion(word_list):
 
     # Send the request to Google Server
     google_url += query_string
+    with open('temp.txt', 'w') as f:
+        f.write(google_url)
     request = urllib2.Request(google_url)
     response = urllib2.urlopen(request)
 
@@ -122,23 +130,25 @@ def query_expansion(word_list):
     results = json.load(response)
     response_data = results['responseData']['results'] 
 
-    if not response_data:
-        return None
-
-    queried_results = []
+    expanded_title = []
+    expanded_desc = []
+    # for the top <num_response> patents retrieved
     for response in response_data[:num_response]:
-        # obtain list of terms from title
+        # expand title query with terms from patent
         title = response['titleNoFormatting'].encode('ascii', 'ignore')
-        title_list = get_terms_list(title)
-        # obtain list of terms from abstract
-        abstract = response['content'].encode('ascii', 'ignore')
-        abstract_list = get_terms_list(abstract)
+        title = title.replace('\n', '')
+        expanded_title += [word for word in title.split(' ') if len(word)]
 
-        queried_results.append([title_list, abstract_list])
+        # expand description query with terms from abstract
+        abstract = response['content'].encode('ascii', 'ignore')
+        abstract = abstract.replace('\n', '')
+        abstract = abstract.replace('<b>', '')
+        abstract = abstract.replace('</b>', '')
+        expanded_desc += [word for word in abstract.split(' ') if len(word)]
 
     #pprint.pprint(response_data)
     #print queried_results
-    return queried_results
+    return expanded_title, expanded_desc
 
 def make_utf(word):
     return word.encode('utf-8')
