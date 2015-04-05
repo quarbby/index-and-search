@@ -60,7 +60,7 @@ def search():
 
     # get document scores and retrieve documents
     scores = get_document_scores(query_title_terms, query_desc_terms)
-    output = retrieve_documents(scores)
+    output = filter_documents(scores)
     
     # write output
     write_output_file(output)
@@ -106,7 +106,7 @@ Performs filtering on the list of documents based on scores derived and return d
 Params:
     scores: {"<docId>": <score>}
 """
-def retrieve_documents(scores):
+def filter_documents(scores):
     # TODO perform filtering based on IPC
     return [i[0] for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
 
