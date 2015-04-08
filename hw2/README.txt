@@ -40,3 +40,22 @@ References:
 Resources from the Internet, i.e. Stack Overflow, Python documentation for python coding
 Shunting-yard algorithm http://en.wikipedia.org/wiki/Shunting-yard_algorithm
 
+== Statement of independent work ==
+
+Please initial one of the following statements.
+
+[X] We, A0119646X, A0088427U , certify that We have followed the CS 3245 Information
+Retrieval class guidelines for homework assignments.  In particular, We
+expressly vow that We have followed the Facebook rule in discussing
+with others in doing the assignment and did not take notes (digital or
+printed) from the discussions.  
+
+[ ] I, A0000000X, A0088427U , did not follow the class rules regarding homework
+assignment, because of the following reason:
+
+<Please fill in>
+
+I suggest that I should be graded as follows:
+
+<Please fill in>
+
