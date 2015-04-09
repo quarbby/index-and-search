@@ -27,6 +27,10 @@ zones = {
         'dict': {},     # {"<term>": <offset>}
         'post': None    # opened postings file for IPC
     },
+    'family_members': {
+        'dict': {},     # {"<term>": <offset>}
+        'post': None    # opened postings file for family_member
+    },
 }
 query_file = ""         # file for queries
 output_file = ""        # file for retrieved results
@@ -108,7 +112,11 @@ Params:
 """
 def filter_documents(scores):
     # TODO perform filtering based on IPC
-    return [i[0] for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
+    # return [str(i[0]) + "," + str(i[1]) for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
+    sorted_results = [i[0] for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
+    top_10_IPC = map(lambda x: doc_IPC[x], sorted_results[:10])
+    top_IPC = max(set(top_10_IPC), key=top_10_IPC.count)
+    return filter(lambda x: doc_IPC[x] == top_IPC, sorted_results)
 
 """
 Params:

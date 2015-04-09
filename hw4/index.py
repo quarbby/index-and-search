@@ -17,6 +17,7 @@ postings_file = ""  # main postings file path (contains postings file paths for 
 title_dict = defaultdict(lambda: {'list': defaultdict(int), 'df': 0})       # {"<term>": {"list": {"<docId>": <tf>}, "df": <df>}}
 abstract_dict = defaultdict(lambda: {'list': defaultdict(int), 'df': 0})    # {"<term>": {"list": {"<docId>": <tf>}, "df": <df>}}
 IPC_dict = defaultdict(lambda: [])                                          # {"<IPC class>": [<docId>...]}
+family_member_dict = defaultdict(lambda: [])                                # {"<docId>": "[<family_member>...]"}
 doc_IPC = {}                                                                # {"<docId>": "<IPC>"}
 doc_length = {}                                                             # {"<docId>": <length of document vector>} (does not differentiate terms between title and abstract)
 title_doc_length = {}                                                       # same format as doc_length but only for title zone document vectors
@@ -28,11 +29,14 @@ total_num_IPC = 0   # total number of IPC classes indexed
 """ indexes each document in corpus """
 def index():
     global total_num_doc
+    #get a list of all docID, excluding the .xml
+    docIDs = os.listdir(doc_dir)
+    docIDs = map(lambda x: x[:-4], docIDs)
     # index every document in corpus
-    for docId in os.listdir(doc_dir):
+    for docId in docIDs:
         total_num_doc += 1
 
-        title_list, abstract_list, IPC = utils.XML_corpus_parser(doc_dir + docId)
+        title_list, abstract_list, IPC, family_members = utils.XML_corpus_parser(doc_dir + docId + '.xml')
 
         corpus_tf, title_tf, abstract_tf = build_corpus_dict(title_list, abstract_list, docId)
         
@@ -44,6 +48,9 @@ def index():
         # process IPC information
         add_to_IPC_dict(IPC, docId)
         doc_IPC[docId] = IPC
+
+        # process family member information
+        add_to_family_member(docId, family_members)
 
     write_files()
 
@@ -129,6 +136,18 @@ def add_to_IPC_dict(IPC, docId):
         total_num_IPC += 1      # update total number of IPC classes
     IPC_dict[IPC].append(docId) # append docId to list for IPC
 
+
+"""
+Index family member
+Params:
+    docId: patent's id
+    family_members: list of family members of the patent i.e patents judged as related to this member
+"""
+def add_to_family_member(docId, family_members):
+    docId = str(docId.strip())
+    family_members = family_members.strip().split(" | ")
+    family_member_dict[docId] = family_members
+
 """
 Writes dictionary and posting files of the following format:
 main dictionary:
@@ -138,7 +157,8 @@ main dictionary:
     <docId>:<document length>, ...      // fourth line lists out document length of abstract zone
     title:dictionary_title.txt          // title:<dictionary filename for title zone>
     abstract:dictionary_abstract.txt    // abstract:<dictionary filename for abstract zone>
-    IPC:dictionary_IPC.txt              // IPC:<dictionary filename for abstract zone>
+    IPC:dictionary_IPC.txt              // IPC:<dictionary filename for IPC class>
+    family_member: family_memebrs.txt   // family_member:<dictionary filename for family members>
 
 zone dictionary for title and abstract:
     <term> <byte offset in postings file> <df>
@@ -162,7 +182,8 @@ def write_files():
     zones = [
         {"name": "title", "dict": title_dict},
         {"name": "abstract", "dict": abstract_dict},
-        {"name": "IPC", "dict": IPC_dict}
+        {"name": "IPC", "dict": IPC_dict},
+        {"name": "family_members", "dict": family_member_dict}
     ]
     # open main dictionary and postings files for writing
     f_dict = open(dict_file, 'w')
@@ -198,6 +219,7 @@ def write_postings(zone_index):
     dictionary = OrderedDict()              # {"<term>": {"offset": <offset>, "df": <df>}}
     offset = 0                              # byte offset in postings file
     isIPC = (zone_index['name'] == 'IPC')   # flag to indicate different handling for IPC
+    isFamily_member = (zone_index['name'] == 'family_members')
     postings_filename = 'postings_' + zone_index['name'] + '.txt'
     with open(postings_filename, 'w') as f:
         last = len(zone_index['dict']) - 1
@@ -206,7 +228,7 @@ def write_postings(zone_index):
             zone_info = pair[1]
             entry = '' 
             # get entry and update dictionary
-            if isIPC:
+            if isIPC or isFamily_member:
                 entry = ','.join(docId for docId in zone_info)
                 dictionary[zone_term] = offset
             else:
@@ -229,10 +251,11 @@ Params:
 """
 def write_dictionary(zone_index, dictionary):
     isIPC = (zone_index['name'] == 'IPC')   # flag to indicate different handling for IPC
+    isFamily_member = (zone_index['name'] == 'family_members')   # flag to indicate different handling for family_member
     dictionary_filename = 'dictionary_' + zone_index['name'] + '.txt'
     with open(dictionary_filename, 'w') as f:
         content = ''
-        if isIPC:
+        if isIPC or isFamily_member:
             content = '\n'.join((term + ' ' + str(offset)) for term, offset in dictionary.items())
         else:
             content = '\n'.join((term + ' ' + str(info['offset']) + ' ' + str(info['df'])) for term, info in dictionary.items())

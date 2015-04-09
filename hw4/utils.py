@@ -58,6 +58,7 @@ def XML_corpus_parser(filename):
     title = ""
     abstract = ""
     IPC = ""
+    family_members = ""
 
     dom = minidom.parse(filename)
     for node in dom.getElementsByTagName('str'):
@@ -71,9 +72,12 @@ def XML_corpus_parser(filename):
                 abstract = value
             elif tag == "IPC Class":
                 IPC = value
+            elif tag == "Family Members":
+                family_members = value
+
 
     get_terms_list(title)
-    return get_terms_list(title), get_terms_list(abstract), IPC
+    return get_terms_list(title), get_terms_list(abstract), IPC, family_members
 
 """
 Returns the list of terms obtained from processing the given string
