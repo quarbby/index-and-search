@@ -8,57 +8,70 @@ Zones used from the Query: Title, Description
 
 General Algorithm for Indexing:
 1. Read the corpus file
-2. Extract the title, abstract and IPC Class
-3. Perform stemming then lemmatization on the words in the title and abstract
+2. Extract the title, abstract, IPC Class and family member from each XML document.
+3. Perform stemming then lemmatization on the words in the title and abstract.
 4. Build dictionaries with the word lists of the title and the abstract. 
 	4a. Add to a global title dictionary the words in the title
 	4b. Add to a global abstract dictionary the words in the abstract
-	4c. Build a corpus dictionary with both title and abstract word lists. 
-5. Calculate the document length by using log length normalisation from the corpus dictionary. 
-	i.e. We do not differentiate the words from the title and the abstract while calculating document length.
-6. Add the document IPC to a dictionary of IPC Class
-7. Write the dictionary and postings file: 
+5. Calculate the necessary vector lengths by using log length normalisation from the corpus dictionary. 
+	a. Calculate the document length for each document
+	b. Calculate title length for each document 
+	c. Calculate absctract length for each document
+	d. Index the lengths calculated to be written into the dictionary in Step 8.
+6. Add the document IPC to a dictionary of IPC Class, with the document ID as the key. 
+7. Add the list of family members (one document may have multiple family members, i.e. related XML documents) to a dictionary of family member, with the document ID as the key. 
+8. Write the dictionary and postings file: 
 
-	a. dictionary.txt contains the IPC dictionary and term dictionary:
-	- IPC dictionary written as: <ipc> <byte offset in posting file>
-	- Title Term dictionary written as: <term> <byte offset in posting file> <doc freq>
-	- Abstract Term dictionary written as: <term> <byte offset in posting file> <doc freq>
+	a. main dictionary:
+	    <docId>:<IPC>, ...                  // first line lists out docId and their respective IPC class
+	    <docId>:<document length>, ...      // second line lists out document length calculated using all terms in document
+	    <docId>:<document length>, ...      // third line lists out document length of title zone
+	    <docId>:<document length>, ...      // fourth line lists out document length of abstract zone
+	    title:dictionary_title.txt          // title:<dictionary filename for title zone>
+	    abstract:dictionary_abstract.txt    // abstract:<dictionary filename for abstract zone>
+	    IPC:dictionary_IPC.txt              // IPC:<dictionary filename for IPC class>
+	    family_member: family_memebrs.txt   // family_member:<dictionary filename for family members>
 
-	b. postings.txt contains the IPC postings, document lengths and document postings: 
-	- First line contains total number IPC and total number of docs tabbed spaced
-	- IPC postings written as: <IPC> <list of docs> 
-	- doc lengths written as: <doc> <doc_length>
-	- title doc postings written as: (docID, term freq) (docID, term freq)...
-	- abstract doc postings written as: (docID, term freq) (docID, term freq)...
+	b. zone dictionary for title and abstract:
+	    <term> <byte offset in postings file> <df>
+	    ...
+	c. zone dictionary for IPC:
+	    <term> <byte offset in postings file>
+	    ...
+	d. main postings file:
+	    title:postings_title.txt            // title:<postings filename for title zone>
+	    abstract:postings_abstract.txt      // abstract:<postings filename for abstract zone>
+	    IPC:postings_IPC.txt                // IPC:<postings filename for abstract zone>
 
-*** ANY SUPER INTERESTING IDEAS FOR EXTRA MARKS? :) **
-• We could consider Relevance feedback mentioned to us in lecture 10 - Jin
+	e. zone postings file for title and abstract:
+	    <docId>:<tf>, ...                   // list out docId:tf pair
+	    ...
+	f. zone postings file for IPC:
+	    <docId>, ...                        // list of docIds
 
-At the same time, maintain another dictionary for the IPC Class. This goes: 
-<class> <docs>
 
 General Algorithm for Searching: 
-1. Read the dictionary and postings file
-2. Construct a document length dictionary, document postings dictionary and IPC postings dictionary 
-3. Read the query file
-4. Remove the words "Relevant documents will describe", since these words repeat over the queries
-5. Extract the title and description from the query file
-6. Perform stemming then lemmatization on the words in the title and description
-7. Performed Query Expansion on the words in the title. 
+1. Read the dictionary and postings files 
+	a. Load all the zone dictionaries: 'title', 'abstract', 'IPC'
+2. Read the query file
+3. Remove the words "Relevant documents will describe", since these words repeat over the queries
+4. Extract the title and description from the query file
+5. Perform stemming then lemmatization on the words in the title and description
+6. Performed Query Expansion on the words in the title. 
 	a. Made used of Google Patent Search JSON Developer Guide
 	b. Parsed the already words of the title to the Google Patent Search at https://ajax.googleapis.com/ajax/services/search/patent
 	c. Recieved back the JSON object, extracted out the title and the content into lists of words 
-	d. *** NOT DONE *** Add these words to the list of words we can search through the database for document IDs
-
-*** THE RANDOM IDEA ***
-*** NOT VERY SURE PLEASE HELP ON THIS ***
-8. Use the LNC.LTC VSM with Weighted Zone Scoring to get out the documents as per HW3 but we don't need to rank them
-i.e. 
-If term in query title & doc title => doc score += score + zone title weight + zone title weight
-term in query title & doc abstract => doc score += score + zone title weight + zone abstract weight
-... 
-10. Get the IPC Class of the documents returned then search the IPC Dictionary for more documents in the same IPC class
-11. Return the top K documents in the IPC class doc list that are similar to the query (defined by cosine normalisation)
+7. Get document scores by cosine normalisation and zone weighting
+	a. Weight for score from query title & document title = 4.0 
+	b. Weight for score from query description & document title = 1.0
+	c. Weight for score from query title & document abstract = 4.0
+	d. Weight for score from query description & document abstract = 1.0
+	e. These zone weights are set by emprical values. 
+8. Filter documents
+	a. Rank the results by their cosine scores, from the highest to the lowest. 
+	b. Pick the top 10 results and find their IPC class.
+	c. Find the most common IPC class among the top 10 results.
+	d. Return documents which has the most common IPC class and are in the top 10 results. This is used because IPC class is manually set for the XML patent document, so they should more correctly reflect the patent document. 
 
 == Files included with this submission ==
 
