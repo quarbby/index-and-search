@@ -55,8 +55,8 @@ def search():
     query_desc += expanded_desc
 
     # Expand query title and decription using wordnet
-    # query_title += utils.query_expansion_wordnet(query_title)
-    # query_desc += utils.query_expansion_wordnet(query_desc)
+    query_title += utils.query_expansion_wordnet(query_title)
+    query_desc += utils.query_expansion_wordnet(query_desc)
     
     # get query terms
     query_title_terms = utils.get_terms_list(' '.join(word for word in query_title))
@@ -64,7 +64,7 @@ def search():
 
     # get document scores and retrieve documents
     scores = get_document_scores(query_title_terms, query_desc_terms)
-    output = filter_documents(scores)
+    output = filter_documents_with_threshold(scores)
     
     # write output
     write_output_file(output)
@@ -110,19 +110,16 @@ Performs filtering on the list of documents based on scores derived and return d
 Params:
     scores: {"<docId>": <score>}
 """
-def filter_documents_with_log(scores):
+def filter_documents_with_threshold(scores):
     # TODO perform filtering based on IPC
     # return [str(i[0]) + "," + str(i[1]) for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
-    sorted_pairs = [i for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
-    max_score = sorted_pairs[0][1]
-    sorted_pairs = map(lambda x: (x[0], math.log(x[1], max_score)), sorted_pairs)
-    sorted_pairs = filter(lambda x: x[1] >= 0.5, sorted_pairs)
-    # print sorted_pairs
-    # sorted_results = [i[0] for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
-    top_10_IPC = map(lambda x: doc_IPC[x[0]], sorted_pairs[:10])
-    top_IPC = max(set(top_10_IPC), key=top_10_IPC.count)
-    sorted_pairs = filter(lambda x: doc_IPC[x[0]] == top_IPC, sorted_pairs)
-    return map(lambda x: x[0], sorted_pairs)
+    sorted_results = [i for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
+    top_IPCs = map(lambda x: doc_IPC[x[0]], sorted_results[:10])
+    # top_IPC = max(set(top_10_IPC), key=top_10_IPC.count)
+    top_scores = sorted_results[0][1]
+    sorted_results = filter(lambda x: doc_IPC[x[0]] in top_IPCs and x[1]/top_scores >= 0.1, sorted_results)
+    return map(lambda x: x[0], sorted_results)
+
 
 """
 Performs filtering on the list of documents based on scores derived and return documents that remains 
@@ -133,9 +130,9 @@ def filter_documents(scores):
     # TODO perform filtering based on IPC
     # return [str(i[0]) + "," + str(i[1]) for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
     sorted_results = [i[0] for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
-    top_10_IPC = map(lambda x: doc_IPC[x], sorted_results[:10])
-    top_IPC = max(set(top_10_IPC), key=top_10_IPC.count)
-    return filter(lambda x: doc_IPC[x] == top_IPC, sorted_results)
+    top_IPCs = map(lambda x: doc_IPC[x], sorted_results[:10])
+    # top_IPC = max(set(top_10_IPC), key=top_10_IPC.count)
+    return filter(lambda x: doc_IPC[x] in top_IPCs, sorted_results)
 
 
 

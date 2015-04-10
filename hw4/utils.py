@@ -116,7 +116,6 @@ def query_expansion_wordnet(word_list):
                 break
 
     expanded_query = map(make_utf, expanded_query)
-    print expanded_query
     return expanded_query
 
 """
