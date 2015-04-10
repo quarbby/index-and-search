@@ -103,12 +103,11 @@ Params:
 def query_expansion_wordnet(word_list):
     expanded_query = []
     for word in word_list:
-        synsets = wordnet.synsets(word)
-        names = [l.name() for s in synsets for l in s.lemmas()]
-        for name in names:
-            expanded_query += name.split('_')   # phrases are seperated by underscore
+        for i, j in enumerate(wordnet.synsets(word)):
+            expanded_query += j.lemma_names()
 
     expanded_query = map(make_utf, expanded_query)
+    print expanded_query
     return expanded_query
 
 """
