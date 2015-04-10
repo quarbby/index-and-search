@@ -243,7 +243,7 @@ def write_postings(zone_index):
                 entry += '\n'
             # write and update offset
             f.write(entry)
-            offset += len(entry) + 1    # addtional 1 character for return carriage
+            offset += len(entry)    # addtional 1 character for return carriage
     return postings_filename, dictionary
 
 """
