@@ -56,11 +56,11 @@ General Algorithm for Searching:
 2. Read the query file
 3. Remove the words "Relevant documents will describe", since these words repeat over the queries
 4. Extract the title and description from the query file
-5. Perform stemming then lemmatization on the words in the title and description
-6. Performed Query Expansion on the words in the title. 
+5. Performed Query Expansion on the words in the title. 
 	a. Made used of Google Patent Search JSON Developer Guide
 	b. Parsed the already words of the title to the Google Patent Search at https://ajax.googleapis.com/ajax/services/search/patent
 	c. Recieved back the JSON object, extracted out the title and the content into lists of words 
+6. Perform stemming then lemmatization on the words in the title and description
 7. Get document scores by cosine normalisation and zone weighting
 	a. Weight for score from query title & document title = 4.0 
 	b. Weight for score from query description & document title = 1.0
