@@ -55,9 +55,8 @@ def search():
     query_desc += expanded_desc
 
     # Expand query title and decription using wordnet
-    query_title = []
-    query_title += utils.query_expansion_wordnet(query_title)
-    query_desc += utils.query_expansion_wordnet(query_desc)
+    # query_title += utils.query_expansion_wordnet(query_title)
+    # query_desc += utils.query_expansion_wordnet(query_desc)
     
     # get query terms
     query_title_terms = utils.get_terms_list(' '.join(word for word in query_title))
