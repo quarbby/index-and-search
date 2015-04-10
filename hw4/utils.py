@@ -52,9 +52,10 @@ def XML_query_parser(filename):
 """
 Returns list of processed words from title, abstract and the IPC number
 Params:
-    filename: document ID
+    filename:   document ID
+    GET_TERMS:  flag to indicate whether to stemmatize/lemmatize terms or not
 """
-def XML_corpus_parser(filename):
+def XML_corpus_parser(filename, GET_TERMS = True):
     title = ""
     abstract = ""
     IPC = ""
@@ -75,9 +76,10 @@ def XML_corpus_parser(filename):
             elif tag == "Family Members":
                 family_members = value
 
-
-    get_terms_list(title)
-    return get_terms_list(title), get_terms_list(abstract), IPC, family_members
+    if (GET_TERMS):
+        return get_terms_list(title), get_terms_list(abstract), IPC, family_members
+    else:
+        return nltk.word_tokenize(title), nltk.word_tokenize(abstract)
 
 """
 Returns the list of terms obtained from processing the given string
@@ -161,5 +163,25 @@ def query_expansion_google(word_list):
     #print queried_results
     return expanded_title, expanded_desc
 
+"""
+From the given list of docIDs, combine words in their title and abstract fields and return the expanded query
+Params:
+    corpus_dir: directory for corpus
+    docIDs:     list of docIDs to conduct RF on
+"""
+def query_expansion_corpus(corpus_dir, docId_list):
+    expanded_title = []
+    expanded_desc = []
+    for docId in docId_list:
+        title_words, abstract_words = XML_corpus_parser(corpus_dir + docId + ".xml", GET_TERMS = False)
+        expanded_title += title_words
+        expanded_desc += abstract_words
+    return expanded_title, expanded_desc
+
+"""
+Encodes a given word in UTF
+Params:
+    word: word to encode
+"""
 def make_utf(word):
     return word.encode('utf-8')

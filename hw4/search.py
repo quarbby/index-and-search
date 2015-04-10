@@ -10,6 +10,7 @@ import sys
 import os
 import io
 
+corpus_dir = ""         # directory of corpus
 dict_file = ""          # main dictionary file path (contains dictionary file paths for zones)
 postings_file = ""      # main postings file path (contains postings file paths for zones)
 zones = {
@@ -41,6 +42,10 @@ doc_length = {}         # {"<docId>": <length of document vector>} does not betw
 total_num_doc = 0   # total number of documents indexed
 total_num_IPC = 0   # total number of IPC classes indexed
 
+USE_WORDNET = False # toggle for using wordnet for query expansion
+USE_GOOGLE = False  # toggle for using Google patents API for RF
+USE_CORPUS = True   # toggle for using patsnap corpus for RF
+
 def search():
     # read in metadata and process zone dictionaries and postings files
     process_main_dict(dict_file)
@@ -50,21 +55,29 @@ def search():
     query_title, query_desc = utils.XML_query_parser(query_file)
 
     # Expand query title and description using google
-    expanded_title, expanded_desc = utils.query_expansion_google(query_title)
-    query_title += expanded_title
-    query_desc += expanded_desc
+    if (USE_GOOGLE):
+        expanded_title, expanded_desc = utils.query_expansion_google(query_title)
+        query_title += expanded_title
+        query_desc += expanded_desc
 
     # Expand query title and decription using wordnet
-    query_title += utils.query_expansion_wordnet(query_title)
-    query_desc += utils.query_expansion_wordnet(query_desc)
+    if (USE_WORDNET):
+        query_title += utils.query_expansion_wordnet(query_title)
+        query_desc += utils.query_expansion_wordnet(query_desc)
     
+    # Expand query title and description using RF on corpus
+    if (USE_CORPUS):
+        expanded_title, expanded_desc = get_RF(query_title, query_desc, 5)
+        query_title += expanded_title
+        query_desc += expanded_desc
+
     # get query terms
     query_title_terms = utils.get_terms_list(' '.join(word for word in query_title))
     query_desc_terms = utils.get_terms_list(' '.join(word for word in query_desc))
 
     # get document scores and retrieve documents
     scores = get_document_scores(query_title_terms, query_desc_terms)
-    output = filter_documents_with_threshold(scores)
+    output = filter_documents_with_threshold(scores, 0.1)
     
     # write output
     write_output_file(output)
@@ -72,6 +85,22 @@ def search():
     # close postings files
     for zone_name in zones:
         zones[zone_name]['post'].close()
+
+"""
+Conduct relevance feedback and returns expansion of query title and description using top K results
+Params:
+    query_title:    list of words in query title
+    query_desc:     list of words in query description
+    K:              top K documents to do RF
+"""
+def get_RF(query_title, query_desc, K):
+    # get query terms
+    query_title_terms = utils.get_terms_list(' '.join(word for word in query_title))
+    query_desc_terms = utils.get_terms_list(' '.join(word for word in query_desc))
+    # get document scores and retrieve documents
+    scores = get_document_scores(query_title_terms, query_desc_terms)
+    top_docIds = [i[0] for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)][:K]
+    return utils.query_expansion_corpus(corpus_dir, top_docIds)
 
 """
 Returns all retreived documents with their respective scores
@@ -108,16 +137,16 @@ def get_tf_dict(terms):
 """
 Performs filtering on the list of documents based on scores derived and return documents that remains 
 Params:
-    scores: {"<docId>": <score>}
+    scores:     {"<docId>": <score>}
+    threshold:  threshold score, below which docIds are discarded
 """
-def filter_documents_with_threshold(scores):
-    # TODO perform filtering based on IPC
+def filter_documents_with_threshold(scores, threshold):
     # return [str(i[0]) + "," + str(i[1]) for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
     sorted_results = [i for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
     top_IPCs = map(lambda x: doc_IPC[x[0]], sorted_results[:10])
     # top_IPC = max(set(top_10_IPC), key=top_10_IPC.count)
     top_scores = sorted_results[0][1]
-    sorted_results = filter(lambda x: doc_IPC[x[0]] in top_IPCs and x[1]/top_scores >= 0.1, sorted_results)
+    sorted_results = filter(lambda x: doc_IPC[x[0]] in top_IPCs and x[1]/top_scores >= threshold, sorted_results)
     return map(lambda x: x[0], sorted_results)
 
 
@@ -127,7 +156,6 @@ Params:
     scores: {"<docId>": <score>}
 """
 def filter_documents(scores):
-    # TODO perform filtering based on IPC
     # return [str(i[0]) + "," + str(i[1]) for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
     sorted_results = [i[0] for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
     top_IPCs = map(lambda x: doc_IPC[x], sorted_results[:10])
@@ -191,19 +219,21 @@ Params:
     filename: filename for main dictionary
 """
 def process_main_dict(filename):
-	# get lines from main dictionary
+    global corpus_dir
+    # get lines from main dictionary
     lines = []
     with open(filename) as f:
         lines = f.read().split('\n')
     
     # load metainformation
-    load_meta(doc_IPC, lines[0], False)                     # load doc_IPC
-    load_meta(doc_length, lines[1], True)                   # load doc_length
-    load_meta(zones['title']['length'], lines[2], True)     # load title_doc_length
-    load_meta(zones['abstract']['length'], lines[3], True)  # load abstract_doc_length
+    corpus_dir = lines[0]
+    load_meta(doc_IPC, lines[1], False)                     # load doc_IPC
+    load_meta(doc_length, lines[2], True)                   # load doc_length
+    load_meta(zones['title']['length'], lines[3], True)     # load title_doc_length
+    load_meta(zones['abstract']['length'], lines[4], True)  # load abstract_doc_length
     
     # load dictionaries for each zone
-    for line in lines[4:7]:
+    for line in lines[5:8]:
         token = line.split(':')
         zone_name = token[0]
         filename = token[1]
@@ -268,8 +298,8 @@ Params:
     output: list of docIds retrieved
 """
 def write_output_file(output):
-	with open(output_file, 'w') as out:
-		out.write(" ".join(str(doc) for doc in output) + '\n')
+    with open(output_file, 'w') as out:
+        out.write(" ".join(str(doc) for doc in output) + '\n')
 
 def usage():
     print "Usage python search.py -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results"
