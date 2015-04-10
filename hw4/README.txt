@@ -3,8 +3,11 @@ A0119646X, A0088427U and A0086894H
 
 == General Notes about this assignment ==
 
-Zones used from the Corpus: Title, Abstract, IPC Class
+Zones used from the Corpus: Title, Abstract
 Zones used from the Query: Title, Description
+
+IPC Class and Family member were extracted and indexed, but after empirical testing, we decided against using them.
+
 
 General Algorithm for Indexing:
 1. Read the corpus file
@@ -23,10 +26,11 @@ General Algorithm for Indexing:
 8. Write the dictionary and postings file: 
 
 	a. main dictionary:
-	    <docId>:<IPC>, ...                  // first line lists out docId and their respective IPC class
-	    <docId>:<document length>, ...      // second line lists out document length calculated using all terms in document
-	    <docId>:<document length>, ...      // third line lists out document length of title zone
-	    <docId>:<document length>, ...      // fourth line lists out document length of abstract zone
+	    <corpus dir>                        // 1st line indicates directory for corpus
+	    <docId>:<IPC>, ...                  // 2nd line lists out docId and their respective IPC class
+	    <docId>:<document length>, ...      // 3rd line lists out document length calculated using all terms in document
+	    <docId>:<document length>, ...      // 4th line lists out document length of title zone
+	    <docId>:<document length>, ...      // 5th line lists out document length of abstract zone
 	    title:dictionary_title.txt          // title:<dictionary filename for title zone>
 	    abstract:dictionary_abstract.txt    // abstract:<dictionary filename for abstract zone>
 	    IPC:dictionary_IPC.txt              // IPC:<dictionary filename for IPC class>
@@ -56,11 +60,14 @@ General Algorithm for Searching:
 2. Read the query file
 3. Remove the words "Relevant documents will describe", since these words repeat over the queries
 4. Extract the title and description from the query file
-5. Performed Query Expansion on the words in the title. 
-	a. Made used of Google Patent Search JSON Developer Guide
-	b. Parsed the already words of the title to the Google Patent Search at https://ajax.googleapis.com/ajax/services/search/patent
-	c. Recieved back the JSON object, extracted out the title and the content into lists of words 
-6. Perform stemming then lemmatization on the words in the title and description
+5. Perform stemming then lemmatization on the words in the title and description
+6. Performed Query Expansion on the words in the title and abstract. 
+	a. Made use of NLTK Wordnet to look for synonyms
+	b. Filter out expanded words that are not in the dictionary of the abstract or titles
+	c. Add expanded words to the original query
+	d. Made used of Google Patent Search JSON Developer Guide
+	e. Parsed the already words of the title to the Google Patent Search at https://ajax.googleapis.com/ajax/services/search/patent
+	f. Recieved back the JSON object, extracted out the title and the content into lists of words 
 7. Get document scores by cosine normalisation and zone weighting
 	a. Weight for score from query title & document title = 4.0 
 	b. Weight for score from query description & document title = 1.0
@@ -69,9 +76,8 @@ General Algorithm for Searching:
 	e. These zone weights are set by emprical values. 
 8. Filter documents
 	a. Rank the results by their cosine scores, from the highest to the lowest. 
-	b. Pick the top 10 results and find their IPC class.
-	c. Find the most common IPC class among the top 10 results.
-	d. Return documents which has the most common IPC class and are in the top 10 results. This is used because IPC class is manually set for the XML patent document, so they should more correctly reflect the patent document. 
+	b. Divide the scores of the documents by the highest score.
+	c. Filter out the ones with scores smaller than 0.1
 
 == Files included with this submission ==
 
@@ -113,5 +119,8 @@ A general structure of the program is taken from our previous homework assignmen
 Python MiniDom for XML parsing: https://wiki.python.org/moin/MiniDom
 NLTK Documentation for Porter Stemmer and Word Net Lemmatizer 
 Query Expansion: Google JSON Developer Guide (https://developers.google.com/patent-search/v1/jsondevguide)
+Plus many Stack Overflow searches 
+
+Expansion: Google JSON Developer Guide (https://developers.google.com/patent-search/v1/jsondevguide)
 Plus many Stack Overflow searches 
 
