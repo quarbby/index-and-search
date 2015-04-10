@@ -55,16 +55,19 @@ def search():
     query_desc += expanded_desc
 
     # Expand query title and decription using wordnet
-    query_title += utils.query_expansion_wordnet(query_title)
-    query_desc += utils.query_expansion_wordnet(query_desc)
+    query_title += filter(lambda x: x in zones['title']['dict'] or x in zones['abstract']['dict'], utils.query_expansion_wordnet(utils.get_terms_list(' '.join(word for word in query_title))))
+    query_desc += filter(lambda x: x in zones['title']['dict'] or x in zones['abstract']['dict'], utils.query_expansion_wordnet(utils.get_terms_list(' '.join(word for word in query_desc))))
     
+    # query_title = filter(lambda x: x in zones['title']['dict'] or x in zones['abstract']['dict'], sequence)
+    # query_desc = filter(lambda x: x in zones['title']['dict'] or x in zones['abstract']['dict'], sequence)
     # get query terms
-    query_title_terms = utils.get_terms_list(' '.join(word for word in query_title))
-    query_desc_terms = utils.get_terms_list(' '.join(word for word in query_desc))
+    # query_title_terms = utils.get_terms_list(' '.join(word for word in query_title))
+    # query_desc_terms = utils.get_terms_list(' '.join(word for word in query_desc))
 
     # get document scores and retrieve documents
-    scores = get_document_scores(query_title_terms, query_desc_terms)
+    scores = get_document_scores(query_title, query_desc)
     output = filter_documents_with_threshold(scores)
+    output = map(lambda x: x[0], output)
     
     # write output
     write_output_file(output)
@@ -114,11 +117,12 @@ def filter_documents_with_threshold(scores):
     # TODO perform filtering based on IPC
     # return [str(i[0]) + "," + str(i[1]) for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
     sorted_results = [i for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
-    top_IPCs = map(lambda x: doc_IPC[x[0]], sorted_results[:10])
     # top_IPC = max(set(top_10_IPC), key=top_10_IPC.count)
     top_scores = sorted_results[0][1]
-    sorted_results = filter(lambda x: doc_IPC[x[0]] in top_IPCs and x[1]/top_scores >= 0.1, sorted_results)
-    return map(lambda x: x[0], sorted_results)
+    return filter(lambda x: x[1]/top_scores >= 0.2, sorted_results)
+
+def sort_no_filter(scores):
+    return [i for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
 
 
 """
@@ -126,10 +130,10 @@ Performs filtering on the list of documents based on scores derived and return d
 Params:
     scores: {"<docId>": <score>}
 """
-def filter_documents(scores):
+def filter_documents_with_IPC(scores):
     # TODO perform filtering based on IPC
     # return [str(i[0]) + "," + str(i[1]) for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
-    sorted_results = [i[0] for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
+    sorted_results = [i for i in sorted(scores.items(), key = lambda x:x[1], reverse = True)]
     top_IPCs = map(lambda x: doc_IPC[x], sorted_results[:10])
     # top_IPC = max(set(top_10_IPC), key=top_10_IPC.count)
     return filter(lambda x: doc_IPC[x] in top_IPCs, sorted_results)
