@@ -150,11 +150,12 @@ def add_to_family_member(docId, family_members):
 
 """
 Writes dictionary and posting files of the following format:
-main dictionary:
-    <docId>:<IPC>, ...                  // first line lists out docId and their respective IPC class
-    <docId>:<document length>, ...      // second line lists out document length calculated using all terms in document
-    <docId>:<document length>, ...      // third line lists out document length of title zone
-    <docId>:<document length>, ...      // fourth line lists out document length of abstract zone
+main dictionary (1st - 5th line contains metainformation):
+    <corpus dir>                        // 1st line indicates directory for corpus
+    <docId>:<IPC>, ...                  // 2nd line lists out docId and their respective IPC class
+    <docId>:<document length>, ...      // 3rd line lists out document length calculated using all terms in document
+    <docId>:<document length>, ...      // 4th line lists out document length of title zone
+    <docId>:<document length>, ...      // 5th line lists out document length of abstract zone
     title:dictionary_title.txt          // title:<dictionary filename for title zone>
     abstract:dictionary_abstract.txt    // abstract:<dictionary filename for abstract zone>
     IPC:dictionary_IPC.txt              // IPC:<dictionary filename for IPC class>
@@ -189,6 +190,8 @@ def write_files():
     f_dict = open(dict_file, 'w')
     f_posting = open(postings_file, 'w')
     
+    # write corpus dir
+    f_dict.write(doc_dir + '\n')
     # write document IPCs
     f_dict.write(','.join((docId + ':' + IPC) for docId, IPC in doc_IPC.items()) + '\n')
     # write document lengths to dictionary 
@@ -240,7 +243,7 @@ def write_postings(zone_index):
                 entry += '\n'
             # write and update offset
             f.write(entry)
-            offset += len(entry)     # addtional 1 character for return carriage
+            offset += len(entry)    # addtional 1 character for return carriage
     return postings_filename, dictionary
 
 """

@@ -23,10 +23,11 @@ General Algorithm for Indexing:
 8. Write the dictionary and postings file: 
 
 	a. main dictionary:
-	    <docId>:<IPC>, ...                  // first line lists out docId and their respective IPC class
-	    <docId>:<document length>, ...      // second line lists out document length calculated using all terms in document
-	    <docId>:<document length>, ...      // third line lists out document length of title zone
-	    <docId>:<document length>, ...      // fourth line lists out document length of abstract zone
+	    <corpus dir>                        // 1st line indicates directory for corpus
+	    <docId>:<IPC>, ...                  // 2nd line lists out docId and their respective IPC class
+	    <docId>:<document length>, ...      // 3rd line lists out document length calculated using all terms in document
+	    <docId>:<document length>, ...      // 4th line lists out document length of title zone
+	    <docId>:<document length>, ...      // 5th line lists out document length of abstract zone
 	    title:dictionary_title.txt          // title:<dictionary filename for title zone>
 	    abstract:dictionary_abstract.txt    // abstract:<dictionary filename for abstract zone>
 	    IPC:dictionary_IPC.txt              // IPC:<dictionary filename for IPC class>
